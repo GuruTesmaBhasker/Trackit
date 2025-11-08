@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Motivator - Stay Focused, Stay Strong</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div style="margin: 20px 0; text-align: center;">
+            <button id="loginBtn">Sign in with Google</button>
+            <button id="logoutBtn">Sign out</button>
+        </div>
+        <header>
+            <h1>Daily Motivator ⚡</h1>
+            <p class="subtitle">Start strong, finish stronger 🚀</p>
+            <div class="date-display" id="currentDate"></div>
+            <div class="date-picker-section">
+                <label for="datePicker">📅 View different date:</label>
+                <input type="date" id="datePicker" class="date-picker">
+                <button id="loadDateData" class="btn btn-secondary">Load Data</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Morning Section -->
+            <section class="morning-section" id="morningSection">
+                <div class="section-header">
+                    <h2>🌅 Morning Routine & Planning</h2>
+                    <p>Complete your daily essentials, then plan your day ✨</p>
+                </div>
+
+                <!-- Sleep Tracker -->
+                <div class="sleep-tracker-section">
+                    <h3>😴 Sleep Tracker</h3>
+                    <p class="tracker-note">Track your sleep schedule for better insights!</p>
+                    <div class="sleep-inputs">
+                        <div class="sleep-input-group">
+                            <label>💤 Slept at:</label>
+                            <input type="datetime-local" id="sleptAt" class="sleep-time-input">
+                        </div>
+                        <div class="sleep-input-group">
+                            <label>⏰ Wake up at:</label>
+                            <input type="datetime-local" id="wakeUpAt" class="sleep-time-input">
+                        </div>
+                    </div>
+                    <div class="sleep-duration" id="sleepDuration">
+                        Sleep Duration: <span id="sleepDurationText">--</span>
+                    </div>
+                    <button id="saveSleepData" class="btn btn-primary">Save Sleep Data</button>
+                </div>
+
+                <!-- Morning Routine Tracker -->
+                <div class="morning-tracker-section">
+                    <h3>⏰ Morning Routine Tracker</h3>
+                    <p class="tracker-note">Track what you did this morning with times for analysis!</p>
+                    <div class="routine-entries" id="routineEntries">
+                        <div class="routine-entry">
+                            <input type="time" class="routine-start" placeholder="Start">
+                            <input type="time" class="routine-end" placeholder="End">
+                            <input type="text" class="routine-activity" placeholder="What did you do? (e.g., Wake up, Exercise, Breakfast)" maxlength="100">
+                            <button type="button" class="btn-remove-entry" onclick="removeRoutineEntry(this)">×</button>
+                        </div>
+                    </div>
+                    <button type="button" id="addRoutineEntry" class="btn btn-secondary">+ Add Another Activity</button>
+                    <button id="saveMorningRoutine" class="btn btn-primary">Save Morning Routine</button>
+                </div>
+
+                <!-- Planning Section (always visible) -->
+                <div class="planning-section unlocked" id="planningSection">
+                    <h3>🎯 Today's Main Goals</h3>
+                    <p class="planning-note">Here are your AI-generated tasks for balanced growth!</p>
+                    <div class="task-generator">
+                        <button id="regenerateTasks" class="btn btn-secondary">🎲 Generate New Tasks</button>
+                        <small>Tasks are automatically generated daily based on your growth areas</small>
+                    </div>
+                    <div class="form-group">
+                        <label>My top 3 tasks today are:</label>
+                        <div class="tasks-container">
+                            <input type="text" id="task1" placeholder="1. ____" maxlength="100">
+                            <input type="text" id="task2" placeholder="2. ____" maxlength="100">
+                            <input type="text" id="task3" placeholder="3. ____" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="avoidance">The one thing I must avoid today:</label>
+                        <input type="text" id="avoidance" placeholder="____" maxlength="100">
+                    </div>
+                    <button id="saveMorning" class="btn btn-primary">Save Morning Plan</button>
+                </div>
+            </section>
+
+            <!-- Evening Section -->
+            <section class="evening-section" id="eveningSection">
+                <div class="section-header">
+                    <h2>🌙 Evening Reflection</h2>
+                    <p>Review your day and plan for tomorrow 🌟</p>
+                </div>
+
+
+                <div class="form-group">
+                    <label>Did I finish the top 3?</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="task1Complete">
+                            <label for="task1Complete" id="task1Label">Task 1</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="task2Complete">
+                            <label for="task2Complete" id="task2Label">Task 2</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="task3Complete">
+                            <label for="task3Complete" id="task3Label">Task 3</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Did I stay focused?</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="focused" value="yes">
+                            <span class="checkmark">✅</span>
+                            <span>Yes, I stayed focused</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="focused" value="no">
+                            <span class="checkmark">❌</span>
+                            <span>No, I got distracted</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="improvement">One improvement for tomorrow:</label>
+                    <input type="text" id="improvement" placeholder="____" maxlength="150">
+                </div>
+
+                <button id="saveEvening" class="btn btn-primary">Save Evening Reflection</button>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="progress-section" id="progressSection">
+                <div class="section-header">
+                    <h2>📊 Your Progress</h2>
+                    <p>Track your consistency and growth 📈</p>
+                </div>
+                
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalDays">0</div>
+                        <div class="stat-label">Days Tracked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completionRate">0%</div>
+                        <div class="stat-label">Task Completion</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="focusRate">0%</div>
+                        <div class="stat-label">Focus Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="routineRate">0%</div>
+                        <div class="stat-label">Routine Consistency</div>
+                    </div>
+                </div>
+
+                <!-- Morning Routine Analysis -->
+                <div class="routine-analysis">
+                    <h3>🕐 Morning Routine Analysis</h3>
+                    
+                    <!-- Circular Chart -->
+                    <div class="circular-chart-section">
+                        <h4>⭕ Activity Circle</h4>
+                        <div class="circle-container">
+                            <canvas id="activityCircle" width="300" height="300"></canvas>
+                            <div class="circle-legend" id="circleLegend"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Every day is a new opportunity to be your best self 💪</p>
+        </footer>
+    </div>
+
+            <script src="script.js"></script>
+            <script type="module">
+                // Import Firebase core and auth from CDN
+                import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+                import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } 
+                    from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+                // Your Firebase config
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCYyTIYCX5bvN7r8BcJvLOKEON1nUaFnQk",
+                    authDomain: "self-improvement-7c7f6.firebaseapp.com",
+                    projectId: "self-improvement-7c7f6",
+                    storageBucket: "self-improvement-7c7f6.appspot.com",
+                    messagingSenderId: "494829137683",
+                    appId: "1:494829137683:web:1e9e6f4a910b02b70774e6",
+                    measurementId: "G-43X839WMSM"
+                };
+                // Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+
+                const auth = getAuth();
+                const provider = new GoogleAuthProvider();
+
+                // Try to sign in when button clicked
+                document.getElementById("loginBtn")?.addEventListener("click", async () => {
+                    try {
+                        const res = await signInWithPopup(auth, provider);
+                        console.log("Signed in as:", res.user.displayName, "UID:", res.user.uid);
+                        alert("Signed in!");
+                    } catch (e) {
+                        console.error(e);
+                        alert("Sign-in failed. Check console.");
+                    }
+                });
+
+                // Sign out (optional button)
+                document.getElementById("logoutBtn")?.addEventListener("click", () => signOut(auth));
+
+                // Watch login state
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("Logged in:", user.uid);
+                        // Show app UI
+                    } else {
+                        console.log("Logged out");
+                        // Show login UI
+                    }
+                });
+            </script>
+</body>
+</html>
