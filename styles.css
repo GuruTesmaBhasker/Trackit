@@ -6,10 +6,10 @@
 }
 
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     line-height: 1.6;
-    color: #333;
-    background: #fff;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     min-height: 100vh;
     padding: 20px;
     overflow-x: hidden;
@@ -42,12 +42,36 @@ body {
 .container {
     max-width: 800px;
     margin: 0 auto;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     overflow: hidden;
     position: relative;
     z-index: 2;
+}
+
+/* Section Styles */
+section {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.section-header h2 {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.section-header p {
+    color: #cccccc;
+    margin-bottom: 20px;
 }
 
 @keyframes containerLoad {
@@ -72,7 +96,7 @@ body {
 
 /* Header Styles */
 header {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
     padding: 30px;
     text-align: center;
     color: white;
@@ -91,15 +115,16 @@ header {
 .date-picker-section label {
     font-size: 0.9rem;
     font-weight: 500;
+    color: #ffffff;
 }
 
 .date-picker {
     padding: 8px 12px;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
     background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 0.9rem;
+    color: #ffffff;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
 }
 
 .date-picker::-webkit-calendar-picker-indicator {
@@ -108,15 +133,16 @@ header {
 
 /* Sleep Tracker Styles */
 .sleep-tracker-section {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     padding: 25px;
     margin-bottom: 30px;
-    border: 2px dashed rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    backdrop-filter: blur(10px);
 }
 
 .sleep-tracker-section h3 {
-    color: #333;
+    color: #ffffff;
     margin-bottom: 10px;
     font-size: 1.3rem;
     font-weight: 600;
@@ -137,39 +163,42 @@ header {
 
 .sleep-input-group label {
     font-weight: 600;
-    color: #333;
+    color: #ffffff;
     font-size: 1rem;
 }
 
 .sleep-time-input {
     padding: 12px 15px;
-    border: 2px solid rgba(102, 126, 234, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
     border-radius: 8px;
     font-size: 1rem;
     font-family: inherit;
-    background: white;
+    backdrop-filter: blur(10px);
     transition: all 0.3s ease;
 }
 
 .sleep-time-input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
 }
 
 .sleep-duration {
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(76, 175, 80, 0.1);
     padding: 15px;
     border-radius: 10px;
     margin-bottom: 20px;
     text-align: center;
     font-weight: 600;
-    color: #333;
+    color: #ffffff;
     font-size: 1.1rem;
+    border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 #sleepDurationText {
-    color: #667eea;
+    color: #4caf50;
     font-weight: 700;
     font-size: 1.2rem;
 }
@@ -183,22 +212,23 @@ header {
 
 /* Morning Tracker Styles */
 .morning-tracker-section {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     padding: 25px;
     margin-bottom: 30px;
-    border: 2px dashed rgba(0, 184, 148, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    backdrop-filter: blur(10px);
 }
 
 .morning-tracker-section h3 {
-    color: #333;
+    color: #ffffff;
     margin-bottom: 10px;
     font-size: 1.3rem;
     font-weight: 600;
 }
 
 .tracker-note {
-    color: #555;
+    color: #cccccc;
     margin-bottom: 20px;
     font-style: italic;
     font-size: 0.95rem;
@@ -216,8 +246,9 @@ header {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     animation: routineEntrySlide 0.5s ease-out;
 }
 
@@ -235,35 +266,41 @@ header {
 .routine-start, .routine-end, .routine-time {
     width: 120px;
     padding: 10px 15px;
-    border: 2px solid rgba(116, 185, 255, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.3);
     border-radius: 8px;
     font-size: 1rem;
     font-family: inherit;
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
     transition: all 0.3s ease;
 }
 
 .routine-start:focus, .routine-end:focus, .routine-time:focus {
     outline: none;
-    border-color: #74b9ff;
-    box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.1);
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
 }
 
 .routine-activity {
     flex: 1;
     padding: 10px 15px;
-    border: 2px solid rgba(116, 185, 255, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.3);
     border-radius: 8px;
     font-size: 1rem;
     font-family: inherit;
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
     transition: all 0.3s ease;
 }
 
 .routine-activity:focus {
     outline: none;
-    border-color: #74b9ff;
-    box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.1);
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+}
+
+.routine-activity::placeholder {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .btn-remove-entry {
@@ -289,14 +326,16 @@ header {
 
 /* Routine Analysis Styles */
 .routine-analysis {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
     padding: 25px;
     margin-top: 30px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    backdrop-filter: blur(10px);
 }
 
 .routine-analysis h3 {
-    color: #333;
+    color: #ffffff;
     margin-bottom: 20px;
     font-size: 1.3rem;
     font-weight: 600;
@@ -304,14 +343,15 @@ header {
 
 /* Circular Chart Styles */
 .circular-chart-section {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .circular-chart-section h4 {
-    color: #333;
+    color: #ffffff;
     margin-bottom: 15px;
     font-size: 1.1rem;
     font-weight: 600;
@@ -326,10 +366,11 @@ header {
 }
 
 #activityCircle {
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     cursor: pointer;
+    backdrop-filter: blur(10px);
 }
 
 .circle-legend {
@@ -344,15 +385,16 @@ header {
     align-items: center;
     gap: 8px;
     padding: 5px 10px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .legend-item:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
     transform: translateX(5px);
 }
 
@@ -360,12 +402,12 @@ header {
     width: 16px;
     height: 16px;
     border-radius: 3px;
-    border: 2px solid white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .legend-text {
-    color: #333;
+    color: #ffffff;
     font-weight: 500;
 }
 
@@ -383,10 +425,13 @@ header {
 
 /* Progress Section */
 .progress-section {
-    background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-    border-color: #00b894;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
     color: white;
     position: relative;
+    border-radius: 15px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
 }
 
 .progress-section::after {
@@ -409,7 +454,7 @@ header {
 
 .progress-section .section-header h2,
 .progress-section .section-header p {
-    color: white;
+    color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -423,6 +468,7 @@ header {
     font-weight: 600;
     margin-bottom: 15px;
     font-size: 1.1rem;
+    color: #ffffff;
 }
 
 .tasks-container {
@@ -434,12 +480,14 @@ header {
 input[type="text"] {
     width: 100%;
     padding: 15px 20px;
-    border: 2px solid #e0e0e0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     font-size: 1rem;
     font-family: inherit;
     transition: all 0.3s ease;
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
     position: relative;
     animation: inputSlideIn 0.6s ease-out;
 }
@@ -457,14 +505,14 @@ input[type="text"] {
 
 input[type="text"]:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
     transform: scale(1.02);
-    background: linear-gradient(45deg, #ffffff, #f8f9ff);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 input[type="text"]::placeholder {
-    color: #999;
+    color: rgba(255, 255, 255, 0.6);
     animation: placeholderFloat 3s ease-in-out infinite;
 }
 
@@ -489,19 +537,25 @@ input[type="text"]::placeholder {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     transition: all 0.3s ease;
 }
 
 .checkbox-item:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.checkbox-item label {
+    color: #ffffff;
+    margin: 0;
 }
 
 input[type="checkbox"] {
     width: 20px;
     height: 20px;
-    accent-color: #667eea;
+    accent-color: #4caf50;
 }
 
 /* Radio Button Styles */
@@ -516,20 +570,25 @@ input[type="checkbox"] {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
+.radio-item span {
+    color: #ffffff;
+}
+
 .radio-item:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 input[type="radio"] {
     width: 20px;
     height: 20px;
-    accent-color: #667eea;
+    accent-color: #4caf50;
 }
 
 .checkmark {
@@ -539,7 +598,7 @@ input[type="radio"] {
 /* Button Styles */
 .btn {
     padding: 15px 30px;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     font-size: 1rem;
     font-weight: 600;
@@ -549,6 +608,9 @@ input[type="radio"] {
     width: 100%;
     position: relative;
     overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
 }
 
 .btn::before {
@@ -567,29 +629,41 @@ input[type="radio"] {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
     color: white;
     animation: buttonGlow 3s ease-in-out infinite;
+    border-color: rgba(76, 175, 80, 0.3);
 }
 
 @keyframes buttonGlow {
     0%, 100% {
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
     }
     50% {
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5);
+        box-shadow: 0 10px 25px rgba(76, 175, 80, 0.5);
     }
 }
 
 .btn-primary:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
-    background: linear-gradient(135deg, #7c8cff 0%, #8a5ec7 100%);
+    box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
+    background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
 }
 
 .btn-primary:active {
     transform: translateY(-1px) scale(1.01);
     animation: buttonPress 0.2s ease-out;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
 }
 
 @keyframes buttonPress {
@@ -612,7 +686,8 @@ input[type="radio"] {
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 25px;
     border-radius: 15px;
     text-align: center;
@@ -621,6 +696,7 @@ input[type="radio"] {
     overflow: hidden;
     animation: statCardFloat 0.8s ease-out;
     animation-fill-mode: both;
+    backdrop-filter: blur(10px);
 }
 
 @keyframes statCardFloat {
@@ -646,22 +722,11 @@ input[type="radio"] {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-    background-size: 200% 100%;
-    animation: statCardShimmer 3s ease-in-out infinite;
-}
-
-@keyframes statCardShimmer {
-    0%, 100% {
-        background-position: -200% 0;
-    }
-    50% {
-        background-position: 200% 0;
-    }
+    background: linear-gradient(90deg, #4caf50, #45a049);
 }
 
 .stat-card:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     transform: translateY(-10px) scale(1.05);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }
@@ -670,7 +735,7 @@ input[type="radio"] {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 10px;
-    color: white;
+    color: #4caf50;
     animation: numberPulse 2s ease-in-out infinite;
 }
 
@@ -687,17 +752,22 @@ input[type="radio"] {
     font-size: 1rem;
     opacity: 0.9;
     font-weight: 500;
+    color: #ffffff;
 }
 
 /* Footer Styles */
 footer {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: rgba(255, 255, 255, 0.05);
     text-align: center;
     padding: 30px;
-    color: #666;
+    color: #cccccc;
     font-weight: 500;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    margin-top: 30px;
+    backdrop-filter: blur(10px);
 }
 
 footer::before {
@@ -707,7 +777,7 @@ footer::before {
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+    background: linear-gradient(90deg, #4caf50, #45a049, #66bb6a, #81c784);
     background-size: 400% 100%;
     animation: footerRainbow 4s ease-in-out infinite;
 }
@@ -792,15 +862,16 @@ footer p::after {
     text-align: center;
     margin-bottom: 25px;
     padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
-    border: 2px dashed rgba(0, 184, 148, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    backdrop-filter: blur(10px);
 }
 
 .task-generator small {
     display: block;
     margin-top: 10px;
-    color: #666;
+    color: #cccccc;
     font-style: italic;
 }
 
@@ -830,7 +901,7 @@ footer p::after {
 }
 
 .saved-notification {
-    background: linear-gradient(135deg, #00b894, #00cec9);
+    background: linear-gradient(135deg, #4caf50, #45a049);
     color: white;
     padding: 15px;
     border-radius: 12px;
@@ -838,7 +909,7 @@ footer p::after {
     text-align: center;
     font-weight: 600;
     animation: notificationSlide 0.5s ease, notificationGlow 2s ease-in-out infinite;
-    box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
 }
 
 @keyframes notificationSlide {

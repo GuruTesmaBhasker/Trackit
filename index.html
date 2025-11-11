@@ -14,11 +14,6 @@
             <h1>Daily Motivator ⚡</h1>
             <p class="subtitle">Start strong, finish stronger 🚀</p>
             <div class="date-display" id="currentDate"></div>
-            <div class="date-picker-section">
-                <label for="datePicker">📅 View different date:</label>
-                <input type="date" id="datePicker" class="date-picker">
-                <button id="loadDateData" class="btn btn-secondary">Load Data</button>
-            </div>
         </header>
 
         <main>
@@ -177,6 +172,21 @@
                             <div class="circle-legend" id="circleLegend"></div>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- History Section (Date Picker moved to last) -->
+            <section class="history-section" id="historySection">
+                <div class="date-picker-section">
+                    <label for="datePicker">📅 View different date:</label>
+                    <input type="date" id="datePicker" class="date-picker">
+                    <button id="loadDateData" class="btn btn-secondary">History</button>
+                </div>
+                
+                <div class="tracking-link" style="margin-top: 20px; text-align: center;">
+                    <a href="tracking.html" class="btn btn-primary" style="text-decoration: none;">
+                        📊 View Activity Tracking
+                    </a>
                 </div>
             </section>
         </main>
