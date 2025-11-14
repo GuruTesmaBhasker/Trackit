@@ -66,6 +66,27 @@
                             <canvas id="energyChart" width="300" height="150"></canvas>
                         </div>
                     </section>
+
+                    <!-- Analytics Section -->
+                    <section class="analytics-section">
+                        <h2>Analytics Dashboard</h2>
+                        <div class="analytics-grid">
+                            <div class="analytics-item">
+                                <h4>Today — Activity Breakdown</h4>
+                                <canvas id="activityCircle" width="300" height="300"></canvas>
+                            </div>
+
+                            <div class="analytics-item">
+                                <h4>Last 14 days — Sleep Duration (minutes)</h4>
+                                <canvas id="sleepLine" width="700" height="280"></canvas>
+                            </div>
+
+                            <div class="analytics-item">
+                                <h4>Last 7 days — Category Minutes</h4>
+                                <canvas id="categoryBar" width="700" height="280"></canvas>
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- Right Column -->
@@ -138,5 +159,6 @@
     </div>
 
     <script type="module" src="tracking.js"></script>
+    <script type="module" src="analytics.js"></script>
 </body>
 </html>

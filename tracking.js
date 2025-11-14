@@ -1,5 +1,6 @@
 import { getCurrentUser, getDay, getRecentSleepSeries } from './database.js';
 import { calculateCategoryTotals, getCategoryColor, getCategoryEmoji } from './classify.js';
+import { renderAnalytics } from './analytics.js';
 
 class ActivityTracker {
     constructor() {
@@ -19,6 +20,16 @@ class ActivityTracker {
         this.renderActivities();
         this.setupEventListeners();
         await this.loadSleepTrends(); // Load sleep analytics
+        
+        // Render comprehensive analytics charts
+        setTimeout(async () => {
+            try {
+                await renderAnalytics();
+                console.log('Analytics charts rendered successfully');
+            } catch (error) {
+                console.error('Error rendering analytics:', error);
+            }
+        }, 1000); // Give time for DOM elements to be ready
     }
 
     updateDateTime() {
