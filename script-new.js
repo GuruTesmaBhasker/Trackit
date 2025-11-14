@@ -2,7 +2,7 @@
 import {
   onUserReady, todayId, saveSleepData, addRoutineActivity,
   saveMorningPlan, updateTaskCompletion, saveEveningReflection, getDay,
-  updateActivityCategory, backfillActivityCategories, getRecentSleepSeries
+  updateActivityCategory, backfillActivityCategories
 } from "./database.js";
 
 import { classifyActivityLabel, getCategoryColor, getCategoryEmoji } from "./classify.js";
@@ -314,79 +314,6 @@ regenerateTasksBtn?.addEventListener("click", async () => {
   alert(`Tasks generated for ${todayId()}! These will persist all day. 🎯`);
 });
 
-/* ---- Backfill functionality ---- */
-const backfillCategoriesBtn = document.getElementById("backfillCategories");
-const backfillSleepBtn = document.getElementById("backfillSleep");
-
-if (backfillCategoriesBtn) {
-  backfillCategoriesBtn.addEventListener("click", async () => {
-    if (!confirm("This will auto-categorize all existing activities. Continue?")) return;
-    
-    try {
-      backfillCategoriesBtn.disabled = true;
-      backfillCategoriesBtn.textContent = "Processing...";
-      
-      const result = await backfillActivityCategories();
-      alert(`Backfill complete! ${result.updated} activities categorized out of ${result.processed} processed.`);
-    } catch (error) {
-      console.error("Backfill error:", error);
-      alert("Error during backfill: " + error.message);
-    } finally {
-      backfillCategoriesBtn.disabled = false;
-      backfillCategoriesBtn.textContent = "🔧 Auto-categorize Existing Activities";
-    }
-  });
-}
-
-if (backfillSleepBtn) {
-  backfillSleepBtn.addEventListener("click", async () => {
-    if (!confirm("This will update existing sleep data with analytics fields. Continue?")) return;
-    
-    try {
-      backfillSleepBtn.disabled = true;
-      backfillSleepBtn.textContent = "Processing...";
-      
-      // Import and run sleep backfill
-      const { backfillSleepData } = await import('./backfill-sleep.js');
-      const result = await backfillSleepData();
-      alert(`Sleep data backfill complete! ${result.updated} documents updated out of ${result.processed} processed.`);
-    } catch (error) {
-      console.error("Sleep backfill error:", error);
-      alert("Error during sleep backfill: " + error.message);
-    } finally {
-      backfillSleepBtn.disabled = false;
-      backfillSleepBtn.textContent = "💤 Update Sleep Analytics Data";
-    }
-  });
-}
-
-/* ---- Backfill Categories Button ---- */
-const backfillBtn = document.getElementById("backfillCategories");
-if (backfillBtn) {
-  backfillBtn.addEventListener("click", async () => {
-    if (!confirm("This will automatically categorize all existing activities. Continue?")) {
-      return;
-    }
-    
-    backfillBtn.textContent = "Processing...";
-    backfillBtn.disabled = true;
-    
-    try {
-      const result = await backfillActivityCategories();
-      alert(`Backfill complete! Updated ${result.updated} activities out of ${result.processed} processed.`);
-      backfillBtn.textContent = "✅ Categorization Complete";
-      backfillBtn.style.background = "rgba(76, 175, 80, 0.2)";
-      setTimeout(() => {
-        backfillBtn.style.display = "none";
-      }, 3000);
-    } catch (error) {
-      console.error("Backfill error:", error);
-      alert("Error during backfill: " + error.message);
-      backfillBtn.textContent = "🔧 Auto-categorize Existing Activities";
-      backfillBtn.disabled = false;
-    }
-  });
-}
 
 /* ---- Auth check: only proceed if user is signed in ---- */
 onUserReady((user) => {

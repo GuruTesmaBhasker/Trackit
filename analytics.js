@@ -1,5 +1,5 @@
 // analytics.js - Updated to work with actual database structure
-import { db, todayId, getDay, getRecentSleepSeries } from "./database.js";
+import { db, todayId, getDay } from "./database.js";
 
 // ---- helpers ----
 
@@ -78,7 +78,6 @@ function toHours(mins) {
 // ---- Chart renderers ----
 
 let activityChart = null;
-let sleepChart = null;
 let categoryChart = null;
 let isRendering = false; // Guard to prevent multiple executions
 
@@ -148,76 +147,7 @@ export async function renderAnalytics() {
       console.warn("❌ Activity circle canvas not found");
     }
 
-    // 2) Sleep Duration Line Chart (last 14 days)
-    console.log("2. Rendering sleep duration chart...");
-    const sleepData = await getRecentSleepSeries(14);
-    console.log("Sleep data received:", sleepData);
-    
-    const labels = sleepData.map(r => r.date.slice(5)); // "MM-DD" format
-    const sleepMinutes = sleepData.map(r => r.minutes ?? null);
-
-    console.log("Sleep chart data:", { labels, data: sleepMinutes });
-
-    const sleepCanvas = document.getElementById("sleepLine");
-    if (sleepCanvas) {
-      const sleepCtx = sleepCanvas.getContext("2d");
-      if (sleepChart) {
-        sleepChart.destroy();
-        sleepChart = null;
-      }
-      
-      sleepChart = new Chart(sleepCtx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: "Sleep (minutes)",
-            data: sleepMinutes,
-            fill: true,
-            backgroundColor: "rgba(33, 150, 243, 0.1)",
-            borderColor: "#2196f3",
-            tension: 0.3,
-            pointRadius: 4,
-            pointBackgroundColor: "#2196f3",
-            borderWidth: 2
-          }]
-        },
-        options: {
-          maintainAspectRatio: false,
-          scales: {
-            y: { 
-              title: { display: true, text: "Minutes", color: "#cccccc" }, 
-              suggestedMin: 0,
-              ticks: { color: "#888" },
-              grid: { color: "rgba(255, 255, 255, 0.1)" }
-            },
-            x: { 
-              ticks: { color: "#888" },
-              grid: { color: "rgba(255, 255, 255, 0.1)" }
-            }
-          },
-          plugins: {
-            legend: { labels: { color: "#cccccc" } },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const v = ctx.raw;
-                  if (v == null) return `No data`;
-                  const h = Math.floor(v / 60);
-                  const m = v % 60;
-                  return `Sleep: ${h}h ${m}m (${v} min)`;
-                }
-              }
-            }
-          }
-        }
-      });
-      console.log("✅ Sleep line chart rendered");
-    } else {
-      console.warn("❌ Sleep line canvas not found");
-    }
-
-    // 3) Category Stacked Bar Chart (last 7 days)
+    // 2) Category Stacked Bar Chart (last 7 days)
     console.log("3. Rendering category bar chart...");
     const catSeries = await getCategorySeries(7);
     
@@ -308,9 +238,6 @@ export async function renderAnalytics() {
     console.log(`   - Productive: ${todayTotals.productive}min (${toHours(todayTotals.productive)}h)`);
     console.log(`   - Neutral: ${todayTotals.neutral}min (${toHours(todayTotals.neutral)}h)`);
     console.log(`   - Waste: ${todayTotals.waste}min (${toHours(todayTotals.waste)}h)`);
-    
-    const validSleepDays = sleepData.filter(d => d.minutes !== null).length;
-    console.log(`😴 Sleep Data: ${validSleepDays}/14 days have sleep records`);
     
   } catch (error) {
     console.error("💥 Analytics render error:", error);

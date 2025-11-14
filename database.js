@@ -8,7 +8,7 @@ import {
   updateDoc, serverTimestamp, Timestamp, getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
 
-import { classifyActivityLabel } from "./classify.js";
+
 
 /* 🔧 Your Firebase config */
 const firebaseConfig = {
@@ -138,7 +138,7 @@ export async function addRoutineActivity({ start, end, label, category = null, d
   const mins = minutesBetween(startTS, endTS);
   
   // Auto-classify if no category provided
-  const finalCategory = category || classifyActivityLabel(label, mins);
+  const finalCategory = category;
 
   await addDoc(collection(ref, "activities"), {
     label: (label || "").trim() || "Activity",
@@ -239,70 +239,9 @@ export async function updateActivityCategory(activityId, newCategory, dateKey = 
   });
 }
 
-/* ----- Backfill missing categories ----- */
-export async function backfillActivityCategories() {
-  console.log("Starting activity categorization backfill...");
-  let processedCount = 0;
-  let updatedCount = 0;
-  
-  try {
-    const dailySnap = await getDocs(collection(db, "daily"));
-    
-    for (const dailyDoc of dailySnap.docs) {
-      const dateKey = dailyDoc.id;
-      const activitiesSnap = await getDocs(collection(db, "daily", dateKey, "activities"));
-      
-      for (const activityDoc of activitiesSnap.docs) {
-        const data = activityDoc.data();
-        processedCount++;
-        
-        // Only update if category is missing
-        if (!data.category) {
-          const category = classifyActivityLabel(data.label || "", data.minutes || 0);
-          await updateDoc(doc(db, "daily", dateKey, "activities", activityDoc.id), {
-            category: category,
-            backfilledAt: serverTimestamp()
-          });
-          updatedCount++;
-          console.log(`Updated activity "${data.label}" to category: ${category}`);
-        }
-      }
-    }
-    
-    console.log(`Backfill complete: ${updatedCount} activities updated out of ${processedCount} processed`);
-    return { processed: processedCount, updated: updatedCount };
-  } catch (error) {
-    console.error("Error during backfill:", error);
-    throw error;
-  }
-}
+
 
 /* ----- Get current user ----- */
 export function getCurrentUser() {
   return auth.currentUser;
-}
-
-/* ----- Get last N days' sleep and wake arrays for analytics ----- */
-export async function getRecentSleepSeries(days = 14) {
-  const results = [];
-  const today = new Date();
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(today.getDate() - i);
-    const key = todayId(d);
-    const snap = await getDoc(doc(db, "daily", key));
-    if (!snap.exists()) {
-      results.push({ date: key, minutes: null, sleptMin: null, wakeMin: null });
-      continue;
-    }
-    const data = snap.data();
-    const sleep = data.sleep || {};
-    results.push({
-      date: key,
-      minutes: sleep.minutes ?? null,
-      sleptMin: sleep.sleptMin ?? null,
-      wakeMin: sleep.wakeMin ?? null
-    });
-  }
-  return results; // array of {date, minutes, sleptMin, wakeMin}
 }

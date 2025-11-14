@@ -123,4 +123,5 @@ body {
     border-radius: 8px;
     padding: 10px;
     backdrop-filter: blur(10px);
+    display: none; /* Hide by default */
 }

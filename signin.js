@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
           alert("Sign in successful!");
           signInMessage.textContent = "Sign in successful! Redirecting...";
           signInMessage.style.color = "green";
+          signInMessage.style.display = "block";
           
           // Redirect to main app after successful sign in
           setTimeout(() => {
@@ -77,9 +78,17 @@ document.addEventListener('DOMContentLoaded', function() {
           alert("Error: " + userFriendlyMessage);
           signInMessage.textContent = "Error: " + userFriendlyMessage;
           signInMessage.style.color = "red";
+          signInMessage.style.display = "block";
         });
     });
   } else {
     console.error("signInForm not found!");
+  }
+
+  // Hide the message box if empty on load
+  if (signInMessage) {
+    if (!signInMessage.textContent.trim()) {
+      signInMessage.style.display = "none";
+    }
   }
 });

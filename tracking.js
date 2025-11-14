@@ -1,4 +1,4 @@
-import { getCurrentUser, getDay, getRecentSleepSeries } from './database.js';
+import { getCurrentUser, getDay } from './database.js';
 import { calculateCategoryTotals, getCategoryColor, getCategoryEmoji } from './classify.js';
 import { renderAnalytics } from './analytics.js';
 
@@ -19,7 +19,6 @@ class ActivityTracker {
         this.setupCharts();
         this.renderActivities();
         this.setupEventListeners();
-        await this.loadSleepTrends(); // Load sleep analytics
         
         // Render comprehensive analytics charts
         setTimeout(async () => {
@@ -69,7 +68,7 @@ class ActivityTracker {
     createSleepChart() {
         const ctx = document.getElementById('sleepChart').getContext('2d');
         
-        // Calculate sleep duration from new analytics data
+        // Calculate sleep duration
         let sleepHours = 0;
         let sleepLabel = 'No Data';
         
@@ -459,61 +458,6 @@ class ActivityTracker {
         console.log('Activity Tracker initialized successfully');
     }
 
-    async loadSleepTrends() {
-        try {
-            const sleepData = await getRecentSleepSeries(7); // Last 7 days
-            this.displaySleepTrends(sleepData);
-        } catch (error) {
-            console.error('Error loading sleep trends:', error);
-        }
-    }
-
-    displaySleepTrends(sleepData) {
-        // Add sleep trends section if it doesn't exist
-        let trendsSection = document.querySelector('.sleep-trends-section');
-        if (!trendsSection) {
-            trendsSection = document.createElement('section');
-            trendsSection.className = 'sleep-trends-section';
-            trendsSection.innerHTML = `
-                <h2>💤 Sleep Trends (Last 7 Days)</h2>
-                <div class="trends-grid" id="sleepTrendsGrid"></div>
-            `;
-            document.querySelector('.left-column').appendChild(trendsSection);
-        }
-
-        const trendsGrid = document.getElementById('sleepTrendsGrid');
-        trendsGrid.innerHTML = '';
-
-        // Calculate averages
-        const validSleepData = sleepData.filter(d => d.minutes !== null);
-        const avgSleep = validSleepData.length > 0 
-            ? Math.round(validSleepData.reduce((sum, d) => sum + d.minutes, 0) / validSleepData.length)
-            : 0;
-        const avgWakeTime = validSleepData.length > 0 
-            ? Math.round(validSleepData.reduce((sum, d) => sum + (d.wakeMin || 0), 0) / validSleepData.length)
-            : 0;
-
-        // Convert avgWakeTime to hours:minutes
-        const wakeHours = Math.floor(avgWakeTime / 60);
-        const wakeMins = avgWakeTime % 60;
-        const wakeTimeStr = `${wakeHours.toString().padStart(2, '0')}:${wakeMins.toString().padStart(2, '0')}`;
-
-        // Display trends
-        trendsGrid.innerHTML = `
-            <div class="trend-card">
-                <div class="trend-value">${Math.floor(avgSleep / 60)}h ${avgSleep % 60}m</div>
-                <div class="trend-label">Avg Sleep</div>
-            </div>
-            <div class="trend-card">
-                <div class="trend-value">${wakeTimeStr}</div>
-                <div class="trend-label">Avg Wake Time</div>
-            </div>
-            <div class="trend-card">
-                <div class="trend-value">${validSleepData.length}/7</div>
-                <div class="trend-label">Days Tracked</div>
-            </div>
-        `;
-    }
 }
 
 // Initialize the tracker when DOM is loaded
