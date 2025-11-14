@@ -53,6 +53,14 @@
                             <input type="time" class="routine-start" placeholder="Start">
                             <input type="time" class="routine-end" placeholder="End">
                             <input type="text" class="routine-activity" placeholder="What did you do? (e.g., Wake up, Exercise, Breakfast)" maxlength="100">
+                            <div class="category-display">
+                                <span class="category-chip" data-category="neutral">⚪ neutral</span>
+                                <select class="category-override" style="display: none;">
+                                    <option value="productive">✅ productive</option>
+                                    <option value="neutral">⚪ neutral</option>
+                                    <option value="waste">🔴 waste</option>
+                                </select>
+                            </div>
                             <button type="button" class="btn-remove-entry" onclick="removeRoutineEntry(this)">×</button>
                         </div>
                     </div>
@@ -187,6 +195,18 @@
                     <a href="tracking.html" class="btn btn-primary" style="text-decoration: none;">
                         📊 View Activity Tracking
                     </a>
+                </div>
+                
+                <div class="admin-tools" style="margin-top: 20px; text-align: center;">
+                    <button id="backfillCategories" class="btn btn-secondary" style="background: rgba(255, 193, 7, 0.2); border-color: #ffc107; margin-right: 10px;">
+                        🔧 Auto-categorize Existing Activities
+                    </button>
+                    <button id="backfillSleep" class="btn btn-secondary" style="background: rgba(33, 150, 243, 0.2); border-color: #2196f3;">
+                        💤 Update Sleep Analytics Data
+                    </button>
+                    <small style="display: block; margin-top: 10px; color: #cccccc; font-style: italic;">
+                        One-time setup: Auto-categorize activities & enhance sleep analytics
+                    </small>
                 </div>
             </section>
         </main>

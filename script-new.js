@@ -1,8 +1,11 @@
 // script.js
 import {
   onUserReady, todayId, saveSleepData, addRoutineActivity,
-  saveMorningPlan, updateTaskCompletion, saveEveningReflection, getDay
+  saveMorningPlan, updateTaskCompletion, saveEveningReflection, getDay,
+  updateActivityCategory, backfillActivityCategories, getRecentSleepSeries
 } from "./database.js";
+
+import { classifyActivityLabel, getCategoryColor, getCategoryEmoji } from "./classify.js";
 
 /* ---- Date + header ---- */
 const currentDateEl = document.getElementById("currentDate");
@@ -49,7 +52,57 @@ addRoutineEntryBtn.addEventListener("click", () => {
     <input type="time" class="routine-start" placeholder="Start">
     <input type="time" class="routine-end" placeholder="End">
     <input type="text" class="routine-activity" placeholder="What did you do?" maxlength="100">
+    <div class="category-display">
+      <span class="category-chip" data-category="neutral">⚪ neutral</span>
+      <select class="category-override" style="display: none;">
+        <option value="productive">✅ productive</option>
+        <option value="neutral">⚪ neutral</option>
+        <option value="waste">🔴 waste</option>
+      </select>
+    </div>
     <button type="button" class="btn-remove-entry">×</button>`;
+  
+  const activityInput = row.querySelector(".routine-activity");
+  const categoryChip = row.querySelector(".category-chip");
+  const categorySelect = row.querySelector(".category-override");
+  
+  // Live classification as user types
+  activityInput.addEventListener("input", () => {
+    const label = activityInput.value;
+    const category = classifyActivityLabel(label);
+    const emoji = getCategoryEmoji(category);
+    const color = getCategoryColor(category);
+    
+    categoryChip.textContent = `${emoji} ${category}`;
+    categoryChip.style.backgroundColor = color + "20";
+    categoryChip.style.borderColor = color + "60";
+    categoryChip.dataset.category = category;
+    categorySelect.value = category;
+  });
+  
+  // Toggle between auto and manual category selection
+  categoryChip.addEventListener("click", () => {
+    categoryChip.style.display = "none";
+    categorySelect.style.display = "inline";
+    categorySelect.focus();
+  });
+  
+  categorySelect.addEventListener("change", () => {
+    const category = categorySelect.value;
+    const emoji = getCategoryEmoji(category);
+    const color = getCategoryColor(category);
+    
+    categoryChip.textContent = `${emoji} ${category}`;
+    categoryChip.style.backgroundColor = color + "20";
+    categoryChip.style.borderColor = color + "60";
+    categoryChip.dataset.category = category;
+  });
+  
+  categorySelect.addEventListener("blur", () => {
+    categoryChip.style.display = "inline";
+    categorySelect.style.display = "none";
+  });
+  
   row.querySelector(".btn-remove-entry").onclick = () => row.remove();
   routineEntriesEl.appendChild(row);
 });
@@ -59,6 +112,58 @@ routineEntriesEl.querySelector(".btn-remove-entry")?.addEventListener("click", (
   e.currentTarget.closest(".routine-entry")?.remove();
 });
 
+// Initialize the default entry with classification functionality
+function initializeRoutineEntry(row) {
+  const activityInput = row.querySelector(".routine-activity");
+  const categoryChip = row.querySelector(".category-chip");
+  const categorySelect = row.querySelector(".category-override");
+  
+  if (!activityInput || !categoryChip || !categorySelect) return;
+  
+  // Live classification as user types
+  activityInput.addEventListener("input", () => {
+    const label = activityInput.value;
+    const category = classifyActivityLabel(label);
+    const emoji = getCategoryEmoji(category);
+    const color = getCategoryColor(category);
+    
+    categoryChip.textContent = `${emoji} ${category}`;
+    categoryChip.style.backgroundColor = color + "20";
+    categoryChip.style.borderColor = color + "60";
+    categoryChip.dataset.category = category;
+    categorySelect.value = category;
+  });
+  
+  // Toggle between auto and manual category selection
+  categoryChip.addEventListener("click", () => {
+    categoryChip.style.display = "none";
+    categorySelect.style.display = "inline";
+    categorySelect.focus();
+  });
+  
+  categorySelect.addEventListener("change", () => {
+    const category = categorySelect.value;
+    const emoji = getCategoryEmoji(category);
+    const color = getCategoryColor(category);
+    
+    categoryChip.textContent = `${emoji} ${category}`;
+    categoryChip.style.backgroundColor = color + "20";
+    categoryChip.style.borderColor = color + "60";
+    categoryChip.dataset.category = category;
+  });
+  
+  categorySelect.addEventListener("blur", () => {
+    categoryChip.style.display = "inline";
+    categorySelect.style.display = "none";
+  });
+}
+
+// Initialize the default entry
+const defaultEntry = routineEntriesEl.querySelector(".routine-entry");
+if (defaultEntry) {
+  initializeRoutineEntry(defaultEntry);
+}
+
 // save all routine entries to Firestore
 saveMorningRoutineBtn.addEventListener("click", async () => {
   const rows = Array.from(routineEntriesEl.querySelectorAll(".routine-entry"));
@@ -66,8 +171,11 @@ saveMorningRoutineBtn.addEventListener("click", async () => {
     const start = row.querySelector(".routine-start")?.value;
     const end   = row.querySelector(".routine-end")?.value;
     const label = row.querySelector(".routine-activity")?.value;
+    const categoryChip = row.querySelector(".category-chip");
+    const category = categoryChip?.dataset.category || "neutral";
+    
     if (start && end && label) {
-      await addRoutineActivity({ start, end, label, dateKey: todayId() });
+      await addRoutineActivity({ start, end, label, category, dateKey: todayId() });
     }
   }
   alert("Morning routine saved!");
@@ -205,6 +313,80 @@ regenerateTasksBtn?.addEventListener("click", async () => {
   
   alert(`Tasks generated for ${todayId()}! These will persist all day. 🎯`);
 });
+
+/* ---- Backfill functionality ---- */
+const backfillCategoriesBtn = document.getElementById("backfillCategories");
+const backfillSleepBtn = document.getElementById("backfillSleep");
+
+if (backfillCategoriesBtn) {
+  backfillCategoriesBtn.addEventListener("click", async () => {
+    if (!confirm("This will auto-categorize all existing activities. Continue?")) return;
+    
+    try {
+      backfillCategoriesBtn.disabled = true;
+      backfillCategoriesBtn.textContent = "Processing...";
+      
+      const result = await backfillActivityCategories();
+      alert(`Backfill complete! ${result.updated} activities categorized out of ${result.processed} processed.`);
+    } catch (error) {
+      console.error("Backfill error:", error);
+      alert("Error during backfill: " + error.message);
+    } finally {
+      backfillCategoriesBtn.disabled = false;
+      backfillCategoriesBtn.textContent = "🔧 Auto-categorize Existing Activities";
+    }
+  });
+}
+
+if (backfillSleepBtn) {
+  backfillSleepBtn.addEventListener("click", async () => {
+    if (!confirm("This will update existing sleep data with analytics fields. Continue?")) return;
+    
+    try {
+      backfillSleepBtn.disabled = true;
+      backfillSleepBtn.textContent = "Processing...";
+      
+      // Import and run sleep backfill
+      const { backfillSleepData } = await import('./backfill-sleep.js');
+      const result = await backfillSleepData();
+      alert(`Sleep data backfill complete! ${result.updated} documents updated out of ${result.processed} processed.`);
+    } catch (error) {
+      console.error("Sleep backfill error:", error);
+      alert("Error during sleep backfill: " + error.message);
+    } finally {
+      backfillSleepBtn.disabled = false;
+      backfillSleepBtn.textContent = "💤 Update Sleep Analytics Data";
+    }
+  });
+}
+
+/* ---- Backfill Categories Button ---- */
+const backfillBtn = document.getElementById("backfillCategories");
+if (backfillBtn) {
+  backfillBtn.addEventListener("click", async () => {
+    if (!confirm("This will automatically categorize all existing activities. Continue?")) {
+      return;
+    }
+    
+    backfillBtn.textContent = "Processing...";
+    backfillBtn.disabled = true;
+    
+    try {
+      const result = await backfillActivityCategories();
+      alert(`Backfill complete! Updated ${result.updated} activities out of ${result.processed} processed.`);
+      backfillBtn.textContent = "✅ Categorization Complete";
+      backfillBtn.style.background = "rgba(76, 175, 80, 0.2)";
+      setTimeout(() => {
+        backfillBtn.style.display = "none";
+      }, 3000);
+    } catch (error) {
+      console.error("Backfill error:", error);
+      alert("Error during backfill: " + error.message);
+      backfillBtn.textContent = "🔧 Auto-categorize Existing Activities";
+      backfillBtn.disabled = false;
+    }
+  });
+}
 
 /* ---- Auth check: only proceed if user is signed in ---- */
 onUserReady((user) => {

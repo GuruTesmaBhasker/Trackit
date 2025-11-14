@@ -396,3 +396,52 @@ header {
     color: #888;
     margin-top: 4px;
 }
+
+/* Sleep trends section */
+.sleep-trends-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.sleep-trends-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #ffffff;
+}
+
+.trends-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+}
+
+.trend-card {
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.trend-card:hover {
+    transform: translateY(-2px);
+}
+
+.trend-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2196f3;
+    display: block;
+}
+
+.trend-label {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}

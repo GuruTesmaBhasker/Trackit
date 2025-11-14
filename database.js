@@ -5,8 +5,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, addDoc, collection,
-  updateDoc, serverTimestamp, Timestamp
+  updateDoc, serverTimestamp, Timestamp, getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
+
+import { classifyActivityLabel } from "./classify.js";
 
 /* 🔧 Your Firebase config */
 const firebaseConfig = {
@@ -76,35 +78,74 @@ export async function ensureDaily(dateKey = todayId()) {
 }
 
 /* ----- Sleep data ----- */
+
+// helper: convert datetime-local string or Timestamp to Date (local)
+function toDateLocal(input) {
+  if (!input) return null;
+  // If already a Firestore Timestamp
+  if (input instanceof Timestamp) return input.toDate();
+  // If ISO / datetime-local string
+  const d = new Date(input);
+  if (isNaN(d)) return null;
+  return d;
+}
+
+// helper: minutes since local midnight (0..1439)
+function minutesSinceMidnight(date) {
+  if (!date) return null;
+  return date.getHours() * 60 + date.getMinutes();
+}
+
 export async function saveSleepData({ sleptAt, wakeUpAt, dateKey = todayId() }) {
   const ref = await ensureDaily(dateKey);
-  const startTS = asTimestamp(sleptAt);
-  const endTS   = asTimestamp(wakeUpAt);
-  const mins = minutesBetween(startTS, endTS);
 
-  await updateDoc(ref, {
+  // Convert inputs to Date objects (works for datetime-local string or Timestamp)
+  const sleptDate = toDateLocal(sleptAt);
+  const wakeDate  = toDateLocal(wakeUpAt);
+
+  // compute minutes total (duration) robustly
+  let mins = null;
+  if (sleptDate && wakeDate) {
+    mins = Math.round((wakeDate.getTime() - sleptDate.getTime()) / 60000);
+    // handle sleep across midnight
+    if (mins < 0) mins += 24 * 60;
+  }
+
+  // compute minutes since midnight for each (useful to chart patterns)
+  const sleptMin = minutesSinceMidnight(sleptDate);
+  const wakeMin  = minutesSinceMidnight(wakeDate);
+
+  const payload = {
     sleep: {
-      sleptAt: startTS,
-      wakeUpAt: endTS,
+      sleptAt: sleptDate ? Timestamp.fromDate(sleptDate) : null,
+      wakeUpAt: wakeDate ? Timestamp.fromDate(wakeDate) : null,
       minutes: mins,
+      sleptMin: sleptMin,
+      wakeMin: wakeMin,
       savedAt: serverTimestamp()
     }
-  });
+  };
+
+  await updateDoc(ref, payload);
 }
 
 /* ----- Morning routine activities (time blocks) ----- */
 // Stored under: /daily/{dateKey}/activities/{autoId}
-export async function addRoutineActivity({ start, end, label, dateKey = todayId() }) {
+export async function addRoutineActivity({ start, end, label, category = null, dateKey = todayId() }) {
   const ref = await ensureDaily(dateKey);
   const startTS = asTimestamp(start);
   const endTS   = asTimestamp(end);
   const mins = minutesBetween(startTS, endTS);
+  
+  // Auto-classify if no category provided
+  const finalCategory = category || classifyActivityLabel(label, mins);
 
   await addDoc(collection(ref, "activities"), {
     label: (label || "").trim() || "Activity",
     start: startTS,
     end: endTS,
     minutes: mins,
+    category: finalCategory,
     createdAt: serverTimestamp()
   });
 
@@ -164,5 +205,104 @@ export async function saveEveningReflection({ focused, improvement, dateKey = to
 export async function getDay(dateKey = todayId()) {
   const ref = doc(db, "daily", dateKey);
   const snap = await getDoc(ref);
-  return snap.exists() ? { id: dateKey, ...snap.data() } : null;
+  
+  if (!snap.exists()) return null;
+  
+  const data = { id: dateKey, ...snap.data() };
+  
+  // Also fetch activities subcollection
+  const activitiesSnap = await getDocs(collection(ref, "activities"));
+  data.activities = activitiesSnap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+  
+  return data;
+}
+
+/* ----- Get all activities for a specific date ----- */
+export async function getActivities(dateKey = todayId()) {
+  const ref = doc(db, "daily", dateKey);
+  const activitiesSnap = await getDocs(collection(ref, "activities"));
+  return activitiesSnap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+}
+
+/* ----- Update activity category ----- */
+export async function updateActivityCategory(activityId, newCategory, dateKey = todayId()) {
+  const activityRef = doc(db, "daily", dateKey, "activities", activityId);
+  await updateDoc(activityRef, {
+    category: newCategory,
+    lastUpdated: serverTimestamp()
+  });
+}
+
+/* ----- Backfill missing categories ----- */
+export async function backfillActivityCategories() {
+  console.log("Starting activity categorization backfill...");
+  let processedCount = 0;
+  let updatedCount = 0;
+  
+  try {
+    const dailySnap = await getDocs(collection(db, "daily"));
+    
+    for (const dailyDoc of dailySnap.docs) {
+      const dateKey = dailyDoc.id;
+      const activitiesSnap = await getDocs(collection(db, "daily", dateKey, "activities"));
+      
+      for (const activityDoc of activitiesSnap.docs) {
+        const data = activityDoc.data();
+        processedCount++;
+        
+        // Only update if category is missing
+        if (!data.category) {
+          const category = classifyActivityLabel(data.label || "", data.minutes || 0);
+          await updateDoc(doc(db, "daily", dateKey, "activities", activityDoc.id), {
+            category: category,
+            backfilledAt: serverTimestamp()
+          });
+          updatedCount++;
+          console.log(`Updated activity "${data.label}" to category: ${category}`);
+        }
+      }
+    }
+    
+    console.log(`Backfill complete: ${updatedCount} activities updated out of ${processedCount} processed`);
+    return { processed: processedCount, updated: updatedCount };
+  } catch (error) {
+    console.error("Error during backfill:", error);
+    throw error;
+  }
+}
+
+/* ----- Get current user ----- */
+export function getCurrentUser() {
+  return auth.currentUser;
+}
+
+/* ----- Get last N days' sleep and wake arrays for analytics ----- */
+export async function getRecentSleepSeries(days = 14) {
+  const results = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const key = todayId(d);
+    const snap = await getDoc(doc(db, "daily", key));
+    if (!snap.exists()) {
+      results.push({ date: key, minutes: null, sleptMin: null, wakeMin: null });
+      continue;
+    }
+    const data = snap.data();
+    const sleep = data.sleep || {};
+    results.push({
+      date: key,
+      minutes: sleep.minutes ?? null,
+      sleptMin: sleep.sleptMin ?? null,
+      wakeMin: sleep.wakeMin ?? null
+    });
+  }
+  return results; // array of {date, minutes, sleptMin, wakeMin}
 }

@@ -1,4 +1,5 @@
-import { getCurrentUser, getDay, saveDailyData } from './database.js';
+import { getCurrentUser, getDay, getRecentSleepSeries } from './database.js';
+import { calculateCategoryTotals, getCategoryColor, getCategoryEmoji } from './classify.js';
 
 class ActivityTracker {
     constructor() {
@@ -17,6 +18,7 @@ class ActivityTracker {
         this.setupCharts();
         this.renderActivities();
         this.setupEventListeners();
+        await this.loadSleepTrends(); // Load sleep analytics
     }
 
     updateDateTime() {
@@ -56,20 +58,12 @@ class ActivityTracker {
     createSleepChart() {
         const ctx = document.getElementById('sleepChart').getContext('2d');
         
-        // Calculate sleep duration
+        // Calculate sleep duration from new analytics data
         let sleepHours = 0;
         let sleepLabel = 'No Data';
         
-        if (this.dailyData?.sleep?.sleptAt && this.dailyData?.sleep?.wakeUpAt) {
-            const sleptTime = new Date(this.dailyData.sleep.sleptAt);
-            const wakeTime = new Date(this.dailyData.sleep.wakeUpAt);
-            
-            let duration = wakeTime - sleptTime;
-            if (duration < 0) {
-                duration += 24 * 60 * 60 * 1000; // Add 24 hours if sleep crossed midnight
-            }
-            
-            sleepHours = duration / (1000 * 60 * 60);
+        if (this.dailyData?.sleep?.minutes) {
+            sleepHours = this.dailyData.sleep.minutes / 60;
             const hours = Math.floor(sleepHours);
             const minutes = Math.round((sleepHours - hours) * 60);
             
@@ -244,14 +238,32 @@ class ActivityTracker {
         const activitiesContainer = document.getElementById('dynamicActivities');
         activitiesContainer.innerHTML = '';
 
-        if (this.dailyData?.routine) {
+        // Use the activities from the subcollection if available
+        if (this.dailyData?.activities && this.dailyData.activities.length > 0) {
+            this.dailyData.activities.forEach((activity, index) => {
+                if (activity.label && activity.start && activity.end) {
+                    const startTime = this.formatTimestampToTime(activity.start);
+                    const endTime = this.formatTimestampToTime(activity.end);
+                    const activityElement = this.createActivityBlock(
+                        startTime,
+                        endTime,
+                        activity.label,
+                        activity.category || 'neutral',
+                        true // Mark as completed since it's stored data
+                    );
+                    activitiesContainer.appendChild(activityElement);
+                }
+            });
+        }
+        // Fallback to old routine structure if activities not available
+        else if (this.dailyData?.routine) {
             this.dailyData.routine.forEach((activity, index) => {
                 if (activity.activity && activity.start && activity.end) {
                     const activityElement = this.createActivityBlock(
                         activity.start,
                         activity.end,
                         activity.activity,
-                        this.categorizeActivity(activity.activity),
+                        activity.category || this.categorizeActivity(activity.activity),
                         true // Mark as completed since it's from routine data
                     );
                     activitiesContainer.appendChild(activityElement);
@@ -281,13 +293,21 @@ class ActivityTracker {
             durationText = `${minutes}m`;
         }
 
+        const categoryEmoji = getCategoryEmoji(category);
+        const categoryColor = getCategoryColor(category);
+
         block.innerHTML = `
             <div class="time-slot">${this.formatTime(startTime)} - ${this.formatTime(endTime)}</div>
             <div class="activity-content">
                 <div class="checkmark">${completed ? '✅' : '⏳'}</div>
                 <div class="activity-info">
                     <div class="activity-name">${activityName}</div>
-                    <div class="activity-subtitle">Duration: ${durationText}</div>
+                    <div class="activity-subtitle">
+                        Duration: ${durationText} 
+                        <span class="category-badge" style="background: ${categoryColor}20; border: 1px solid ${categoryColor}60; color: ${categoryColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-left: 8px;">
+                            ${categoryEmoji} ${category}
+                        </span>
+                    </div>
                 </div>
             </div>
         `;
@@ -315,6 +335,15 @@ class ActivityTracker {
         const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
         const ampm = hour24 >= 12 ? 'PM' : 'AM';
         return `${hour12}:${minutes} ${ampm}`;
+    }
+
+    formatTimestampToTime(timestamp) {
+        if (!timestamp) return '--:--';
+        // Handle Firestore Timestamp
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp.seconds * 1000);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
     }
 
     renderStats() {
@@ -350,44 +379,129 @@ class ActivityTracker {
     calculateStats() {
         const stats = {};
         
+        // Use activities from subcollection if available, otherwise fall back to routine
+        const activities = this.dailyData?.activities || this.dailyData?.routine || [];
+        
+        // Calculate category totals
+        const categoryTotals = calculateCategoryTotals(activities.map(activity => ({
+            minutes: activity.minutes || this.calculateActivityMinutes(activity),
+            category: activity.category || 'neutral'
+        })));
+        
         // Total activities
-        const totalActivities = this.dailyData?.routine?.length || 0;
-        stats['Activities'] = totalActivities;
+        stats['Activities'] = activities.length;
+        
+        // Category-based stats
+        const productiveHours = Math.floor(categoryTotals.productive / 60);
+        const productiveMinutes = categoryTotals.productive % 60;
+        stats['Productive Time'] = productiveHours > 0 ? 
+            `${productiveHours}h ${productiveMinutes}m` : `${productiveMinutes}m`;
+        
+        // Productivity percentage
+        stats['Productivity'] = `${categoryTotals.productivePercentage}%`;
         
         // Total active time
-        let totalMinutes = 0;
-        if (this.dailyData?.routine) {
-            this.dailyData.routine.forEach(activity => {
-                if (activity.start && activity.end) {
-                    const start = new Date(`1970-01-01T${activity.start}:00`);
-                    const end = new Date(`1970-01-01T${activity.end}:00`);
-                    const duration = (end - start) / (1000 * 60);
-                    if (duration > 0) {
-                        totalMinutes += duration;
-                    }
-                }
-            });
+        const totalHours = Math.floor(categoryTotals.total / 60);
+        const totalMins = categoryTotals.total % 60;
+        stats['Total Time'] = totalHours > 0 ? 
+            `${totalHours}h ${totalMins}m` : `${totalMins}m`;
+        
+        // Tasks completed (if available)
+        if (this.dailyData?.tasks) {
+            const completedTasks = this.dailyData.tasks.filter(task => task.done).length;
+            stats['Tasks Done'] = `${completedTasks}/3`;
         }
         
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = Math.round(totalMinutes % 60);
-        stats['Active Time'] = `${hours}h ${minutes}m`;
-        
-        // Tasks completed
-        const completedTasks = this.dailyData?.tasks ? 
-            Object.values(this.dailyData.tasks).filter(task => task.completed).length : 0;
-        stats['Tasks Done'] = completedTasks;
-        
         // Focus score (if available)
-        const focusScore = this.dailyData?.reflection?.focused === 'yes' ? '100%' : '0%';
-        stats['Focus Score'] = focusScore;
+        if (this.dailyData?.reflection?.focused) {
+            const focusScore = this.dailyData.reflection.focused === 'yes' ? '100%' : '0%';
+            stats['Focus Score'] = focusScore;
+        }
         
         return stats;
+    }
+
+    calculateActivityMinutes(activity) {
+        if (activity.minutes) return activity.minutes;
+        
+        if (activity.start && activity.end) {
+            // Handle both timestamp objects and time strings
+            let start, end;
+            
+            if (typeof activity.start === 'string') {
+                start = new Date(`1970-01-01T${activity.start}:00`);
+                end = new Date(`1970-01-01T${activity.end}:00`);
+            } else {
+                // Assume Firestore timestamp
+                start = activity.start.toDate ? activity.start.toDate() : new Date(activity.start.seconds * 1000);
+                end = activity.end.toDate ? activity.end.toDate() : new Date(activity.end.seconds * 1000);
+            }
+            
+            return Math.max(0, (end - start) / (1000 * 60));
+        }
+        
+        return 0;
     }
 
     setupEventListeners() {
         // Add any interactive functionality here
         console.log('Activity Tracker initialized successfully');
+    }
+
+    async loadSleepTrends() {
+        try {
+            const sleepData = await getRecentSleepSeries(7); // Last 7 days
+            this.displaySleepTrends(sleepData);
+        } catch (error) {
+            console.error('Error loading sleep trends:', error);
+        }
+    }
+
+    displaySleepTrends(sleepData) {
+        // Add sleep trends section if it doesn't exist
+        let trendsSection = document.querySelector('.sleep-trends-section');
+        if (!trendsSection) {
+            trendsSection = document.createElement('section');
+            trendsSection.className = 'sleep-trends-section';
+            trendsSection.innerHTML = `
+                <h2>💤 Sleep Trends (Last 7 Days)</h2>
+                <div class="trends-grid" id="sleepTrendsGrid"></div>
+            `;
+            document.querySelector('.left-column').appendChild(trendsSection);
+        }
+
+        const trendsGrid = document.getElementById('sleepTrendsGrid');
+        trendsGrid.innerHTML = '';
+
+        // Calculate averages
+        const validSleepData = sleepData.filter(d => d.minutes !== null);
+        const avgSleep = validSleepData.length > 0 
+            ? Math.round(validSleepData.reduce((sum, d) => sum + d.minutes, 0) / validSleepData.length)
+            : 0;
+        const avgWakeTime = validSleepData.length > 0 
+            ? Math.round(validSleepData.reduce((sum, d) => sum + (d.wakeMin || 0), 0) / validSleepData.length)
+            : 0;
+
+        // Convert avgWakeTime to hours:minutes
+        const wakeHours = Math.floor(avgWakeTime / 60);
+        const wakeMins = avgWakeTime % 60;
+        const wakeTimeStr = `${wakeHours.toString().padStart(2, '0')}:${wakeMins.toString().padStart(2, '0')}`;
+
+        // Display trends
+        trendsGrid.innerHTML = `
+            <div class="trend-card">
+                <div class="trend-value">${Math.floor(avgSleep / 60)}h ${avgSleep % 60}m</div>
+                <div class="trend-label">Avg Sleep</div>
+            </div>
+            <div class="trend-card">
+                <div class="trend-value">${wakeTimeStr}</div>
+                <div class="trend-label">Avg Wake Time</div>
+            </div>
+            <div class="trend-card">
+                <div class="trend-value">${validSleepData.length}/7</div>
+                <div class="trend-label">Days Tracked</div>
+            </div>
+        `;
     }
 }
 
