@@ -2,7 +2,7 @@
 import {
   onUserReady, todayId, saveSleepData, addRoutineActivity,
   saveMorningPlan, updateTaskCompletion, saveEveningReflection, getDay,
-  updateActivityCategory, backfillActivityCategories
+  updateActivityCategory
 } from "./database.js";
 
 // Helper functions for categories (replaced classify.js)
@@ -280,19 +280,58 @@ document.getElementById("currentDate").textContent =
   }
 })();
 
-/* ---- Generate Tasks Button ---- */
-document.addEventListener('DOMContentLoaded', () => {
+/* ---- Check if tasks already generated today ---- */
+async function checkAndLoadTodaysTasks() {
+  try {
+    const todayData = await getDay(todayId());
+    const regenerateTasksBtn = document.getElementById("regenerateTasks");
+    
+    if (todayData && todayData.tasks && todayData.tasks.length >= 3) {
+      // Tasks already generated - load them and disable button
+      document.getElementById("task1").value = todayData.tasks[0]?.text || "";
+      document.getElementById("task2").value = todayData.tasks[1]?.text || "";
+      document.getElementById("task3").value = todayData.tasks[2]?.text || "";
+      document.getElementById("avoidance").value = todayData.avoidance || "";
+      
+      // Update evening labels
+      document.getElementById("task1Label").textContent = todayData.tasks[0]?.text || "Task 1";
+      document.getElementById("task2Label").textContent = todayData.tasks[1]?.text || "Task 2";
+      document.getElementById("task3Label").textContent = todayData.tasks[2]?.text || "Task 3";
+      
+      // Disable the generate button
+      if (regenerateTasksBtn) {
+        regenerateTasksBtn.disabled = true;
+        regenerateTasksBtn.textContent = "✅ Tasks Generated for Today";
+        regenerateTasksBtn.style.background = "#28a745";
+        regenerateTasksBtn.style.cursor = "not-allowed";
+        regenerateTasksBtn.title = "Tasks are already generated for today. Try again tomorrow!";
+      }
+      
+      return true; // Tasks already exist
+    }
+    
+    return false; // No tasks generated yet
+  } catch (error) {
+    console.error("Error checking today's tasks:", error);
+    return false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   const regenerateTasksBtn = document.getElementById("regenerateTasks");
   
   if (!regenerateTasksBtn) {
-    console.error("Generate Tasks button not found!");
     return;
   }
   
-  console.log("✅ Generate Tasks button found, setting up event listener...");
+  // Check if tasks are already generated for today
+  const tasksAlreadyGenerated = await checkAndLoadTodaysTasks();
   
-  regenerateTasksBtn.addEventListener("click", async () => {
-    console.log("🎲 Generate Tasks button clicked!");
+  if (tasksAlreadyGenerated) {
+    return; // Don't add click listener if tasks already exist
+  }
+  regenerateTasksBtn.addEventListener("click", async (event) => {
+    event.preventDefault();
     
     const taskBank = [
       "Read 20 pages of a book",
@@ -342,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById("task3").value = selectedTasks[2];
       document.getElementById("avoidance").value = randomAvoidance;
       
-      // Save the generated tasks to database (persists for the entire day)
+      // Save the generated tasks to database with proper structure
       await saveMorningPlan({
         task1: selectedTasks[0],
         task2: selectedTasks[1], 
@@ -356,11 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById("task2Label").textContent = selectedTasks[1];
       document.getElementById("task3Label").textContent = selectedTasks[2];
       
-      console.log("✅ Tasks generated and saved successfully!");
-      alert(`Tasks generated for ${todayId()}! These will persist all day. 🎯`);
+      // Disable the generate button
+      regenerateTasksBtn.disabled = true;
+      regenerateTasksBtn.textContent = "✅ Tasks Generated for Today";
+      regenerateTasksBtn.style.background = "#28a745";
+      regenerateTasksBtn.style.cursor = "not-allowed";
+      regenerateTasksBtn.title = "Tasks are already generated for today. Try again tomorrow!";
+      
+      alert(`Tasks generated for ${todayId()}! These will persist all day and sync across all your devices. 🎯`);
       
     } catch (error) {
-      console.error("💥 Error generating tasks:", error);
       alert("Sorry, there was an error generating tasks. Please try again.");
     }
   });
@@ -371,12 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
 onUserReady((user) => {
   if (!user) {
     // Redirect to sign-in if not authenticated
-    console.warn("User not authenticated, redirecting to login...");
     setTimeout(() => {
       window.location.href = "index.html";
     }, 2000); // Give user 2 seconds to see the page before redirect
-  } else {
-    console.log("User signed in:", user.email);
-    // All functionality is already set up above, no need to repeat here
   }
 });
