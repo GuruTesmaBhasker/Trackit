@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Tasks Test</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: Arial; padding: 20px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; }
+        button:hover { background: #0056b3; }
+        input { background: #333; color: white; border: 1px solid #555; padding: 10px; margin: 5px; width: 300px; border-radius: 5px; }
+        .result { margin: 20px 0; padding: 15px; background: #333; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🎲 Generate Tasks Test</h1>
+    <p>Testing the task generation functionality...</p>
+    
+    <button id="testGenerateBtn">🎯 Test Generate Tasks</button>
+    <button id="clearBtn">🗑️ Clear</button>
+    
+    <div class="result">
+        <h3>Generated Tasks:</h3>
+        <input type="text" id="task1" placeholder="Task 1" readonly>
+        <input type="text" id="task2" placeholder="Task 2" readonly>
+        <input type="text" id="task3" placeholder="Task 3" readonly>
+        <input type="text" id="avoidance" placeholder="Avoidance" readonly>
+    </div>
+    
+    <div id="status"></div>
+
+    <script>
+        console.log("🧪 Test page loaded");
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("✅ DOM ready");
+            
+            const testBtn = document.getElementById('testGenerateBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const statusDiv = document.getElementById('status');
+            
+            testBtn.addEventListener('click', () => {
+                console.log("🎲 Test button clicked!");
+                statusDiv.innerHTML = "🔄 Generating tasks...";
+                
+                const taskBank = [
+                    "Read 20 pages of a book",
+                    "Exercise for 30 minutes", 
+                    "Meditate for 10 minutes",
+                    "Learn something new for 1 hour",
+                    "Call a friend or family member",
+                    "Organize your workspace",
+                    "Practice a skill for 30 minutes",
+                    "Write in a journal",
+                    "Take a walk in nature",
+                    "Complete a creative project"
+                ];
+                
+                const avoidanceSuggestions = [
+                    "Social media scrolling",
+                    "Procrastination",
+                    "Negative self-talk",
+                    "Junk food",
+                    "Excessive phone use"
+                ];
+                
+                // Generate random tasks
+                const shuffled = [...taskBank].sort(() => 0.5 - Math.random());
+                const selectedTasks = shuffled.slice(0, 3);
+                const randomAvoidance = avoidanceSuggestions[Math.floor(Math.random() * avoidanceSuggestions.length)];
+                
+                // Fill inputs
+                document.getElementById("task1").value = selectedTasks[0];
+                document.getElementById("task2").value = selectedTasks[1];
+                document.getElementById("task3").value = selectedTasks[2];
+                document.getElementById("avoidance").value = randomAvoidance;
+                
+                statusDiv.innerHTML = "✅ Tasks generated successfully!";
+                console.log("✅ Tasks generated:", selectedTasks);
+            });
+            
+            clearBtn.addEventListener('click', () => {
+                document.getElementById("task1").value = "";
+                document.getElementById("task2").value = "";
+                document.getElementById("task3").value = "";
+                document.getElementById("avoidance").value = "";
+                statusDiv.innerHTML = "🗑️ Cleared";
+            });
+        });
+    </script>
+</body>
+</html>

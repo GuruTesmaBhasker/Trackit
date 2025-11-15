@@ -5,7 +5,40 @@ import {
   updateActivityCategory, backfillActivityCategories
 } from "./database.js";
 
-import { classifyActivityLabel, getCategoryColor, getCategoryEmoji } from "./classify.js";
+// Helper functions for categories (replaced classify.js)
+function classifyActivityLabel(label) {
+  // Simple classification based on keywords
+  const productiveKeywords = ['work', 'study', 'read', 'exercise', 'learn', 'code', 'plan', 'organize'];
+  const wasteKeywords = ['social media', 'scroll', 'tv', 'games', 'youtube', 'netflix', 'procrastinate'];
+  
+  const lowerLabel = label.toLowerCase();
+  
+  if (productiveKeywords.some(keyword => lowerLabel.includes(keyword))) {
+    return 'productive';
+  }
+  if (wasteKeywords.some(keyword => lowerLabel.includes(keyword))) {
+    return 'waste';
+  }
+  return 'neutral';
+}
+
+function getCategoryColor(category) {
+  const colors = {
+    'productive': '#4CAF50',
+    'neutral': '#9E9E9E', 
+    'waste': '#F44336'
+  };
+  return colors[category?.toLowerCase()] || colors.neutral;
+}
+
+function getCategoryEmoji(category) {
+  const emojis = {
+    'productive': '✅',
+    'neutral': '⚪',
+    'waste': '❌'
+  };
+  return emojis[category?.toLowerCase()] || emojis.neutral;
+}
 
 /* ---- Date + header ---- */
 const currentDateEl = document.getElementById("currentDate");
@@ -248,70 +281,89 @@ document.getElementById("currentDate").textContent =
 })();
 
 /* ---- Generate Tasks Button ---- */
-const regenerateTasksBtn = document.getElementById("regenerateTasks");
-regenerateTasksBtn?.addEventListener("click", async () => {
-  const taskBank = [
-    "Read 20 pages of a book",
-    "Exercise for 30 minutes", 
-    "Meditate for 10 minutes",
-    "Learn something new for 1 hour",
-    "Call a friend or family member",
-    "Organize your workspace",
-    "Practice a skill for 30 minutes",
-    "Write in a journal",
-    "Take a walk in nature",
-    "Complete a creative project",
-    "Plan your week ahead",
-    "Clean and declutter your space",
-    "Cook a healthy meal",
-    "Practice gratitude - list 5 things",
-    "Work on a personal goal",
-    "Listen to an educational podcast",
-    "Do breathing exercises",
-    "Review and update your goals",
-    "Spend time in sunlight",
-    "Connect with nature"
-  ];
+document.addEventListener('DOMContentLoaded', () => {
+  const regenerateTasksBtn = document.getElementById("regenerateTasks");
   
-  const avoidanceSuggestions = [
-    "Social media scrolling",
-    "Procrastination",
-    "Negative self-talk",
-    "Junk food",
-    "Excessive phone use",
-    "Complaining",
-    "Making excuses",
-    "Overthinking",
-    "Comparing to others",
-    "Wasting time"
-  ];
+  if (!regenerateTasksBtn) {
+    console.error("Generate Tasks button not found!");
+    return;
+  }
   
-  // Randomly select 3 unique tasks
-  const shuffled = [...taskBank].sort(() => 0.5 - Math.random());
-  const selectedTasks = shuffled.slice(0, 3);
-  const randomAvoidance = avoidanceSuggestions[Math.floor(Math.random() * avoidanceSuggestions.length)];
+  console.log("✅ Generate Tasks button found, setting up event listener...");
   
-  // Fill the task inputs with generated tasks
-  document.getElementById("task1").value = selectedTasks[0];
-  document.getElementById("task2").value = selectedTasks[1];
-  document.getElementById("task3").value = selectedTasks[2];
-  document.getElementById("avoidance").value = randomAvoidance;
-  
-  // Save the generated tasks to database (persists for the entire day)
-  await saveMorningPlan({
-    task1: selectedTasks[0],
-    task2: selectedTasks[1], 
-    task3: selectedTasks[2],
-    avoidance: randomAvoidance,
-    dateKey: todayId()
+  regenerateTasksBtn.addEventListener("click", async () => {
+    console.log("🎲 Generate Tasks button clicked!");
+    
+    const taskBank = [
+      "Read 20 pages of a book",
+      "Exercise for 30 minutes", 
+      "Meditate for 10 minutes",
+      "Learn something new for 1 hour",
+      "Call a friend or family member",
+      "Organize your workspace",
+      "Practice a skill for 30 minutes",
+      "Write in a journal",
+      "Take a walk in nature",
+      "Complete a creative project",
+      "Plan your week ahead",
+      "Clean and declutter your space",
+      "Cook a healthy meal",
+      "Practice gratitude - list 5 things",
+      "Work on a personal goal",
+      "Listen to an educational podcast",
+      "Do breathing exercises",
+      "Review and update your goals",
+      "Spend time in sunlight",
+      "Connect with nature"
+    ];
+    
+    const avoidanceSuggestions = [
+      "Social media scrolling",
+      "Procrastination",
+      "Negative self-talk",
+      "Junk food",
+      "Excessive phone use",
+      "Complaining",
+      "Making excuses",
+      "Overthinking",
+      "Comparing to others",
+      "Wasting time"
+    ];
+    
+    try {
+      // Randomly select 3 unique tasks
+      const shuffled = [...taskBank].sort(() => 0.5 - Math.random());
+      const selectedTasks = shuffled.slice(0, 3);
+      const randomAvoidance = avoidanceSuggestions[Math.floor(Math.random() * avoidanceSuggestions.length)];
+      
+      // Fill the task inputs with generated tasks
+      document.getElementById("task1").value = selectedTasks[0];
+      document.getElementById("task2").value = selectedTasks[1];
+      document.getElementById("task3").value = selectedTasks[2];
+      document.getElementById("avoidance").value = randomAvoidance;
+      
+      // Save the generated tasks to database (persists for the entire day)
+      await saveMorningPlan({
+        task1: selectedTasks[0],
+        task2: selectedTasks[1], 
+        task3: selectedTasks[2],
+        avoidance: randomAvoidance,
+        dateKey: todayId()
+      });
+      
+      // Update evening labels immediately
+      document.getElementById("task1Label").textContent = selectedTasks[0];
+      document.getElementById("task2Label").textContent = selectedTasks[1];
+      document.getElementById("task3Label").textContent = selectedTasks[2];
+      
+      console.log("✅ Tasks generated and saved successfully!");
+      alert(`Tasks generated for ${todayId()}! These will persist all day. 🎯`);
+      
+    } catch (error) {
+      console.error("💥 Error generating tasks:", error);
+      alert("Sorry, there was an error generating tasks. Please try again.");
+    }
   });
-  
-  // Update evening labels immediately
-  document.getElementById("task1Label").textContent = selectedTasks[0];
-  document.getElementById("task2Label").textContent = selectedTasks[1];
-  document.getElementById("task3Label").textContent = selectedTasks[2];
-  
-  alert(`Tasks generated for ${todayId()}! These will persist all day. 🎯`);
 });
 
 
@@ -319,8 +371,12 @@ regenerateTasksBtn?.addEventListener("click", async () => {
 onUserReady((user) => {
   if (!user) {
     // Redirect to sign-in if not authenticated
-    window.location.href = "index.html";
+    console.warn("User not authenticated, redirecting to login...");
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 2000); // Give user 2 seconds to see the page before redirect
   } else {
     console.log("User signed in:", user.email);
+    // All functionality is already set up above, no need to repeat here
   }
 });
