@@ -2,7 +2,7 @@
 import {
   onUserReady, todayId, saveSleepData, addRoutineActivity,
   saveMorningPlan, updateTaskCompletion, saveEveningReflection, getDay,
-  updateActivityCategory
+  updateActivityCategory, formatDateForDisplay
 } from "./database.js";
 
 // Helper functions for categories (replaced classify.js)
@@ -249,13 +249,467 @@ document.getElementById("saveEvening").addEventListener("click", async () => {
   alert("Evening reflection saved!");
 });
 
-/* ---- Date picker: load another day (you'll render charts yourself) ---- */
-loadDateDataBtn.addEventListener("click", async () => {
-  const key = datePicker.value || todayId();
-  const day = await getDay(key);
-  if (!day) { alert("No data for that date."); return; }
-  console.log("Day data:", day); // you can now visualize activities & stats
-});
+
+/* ---- Calendar functionality ---- */
+function setupCalendarFunctionality() {
+  const calendarDates = document.querySelectorAll('.clickable-date');
+  
+  if (calendarDates.length === 0) {
+    console.warn('No clickable calendar dates found');
+    return;
+  }
+  
+  calendarDates.forEach(dateElement => {
+    dateElement.addEventListener('click', async () => {
+      // Remove previous selection
+      document.querySelectorAll('.clickable-date.selected').forEach(el => {
+        el.classList.remove('selected');
+      });
+      
+      // Add selection to clicked date
+      dateElement.classList.add('selected');
+      
+      // Get the date from data attribute
+      const selectedDate = dateElement.getAttribute('data-date');
+      
+      // Load and display data for this date
+      await loadDateData(selectedDate);
+    });
+  });
+}
+
+/* ---- Load and display data for a specific date ---- */
+async function loadDateData(dateKey) {
+  try {
+    const dayData = await getDay(dateKey);
+    
+    // Show the analytics widget
+    const analyticsWidget = document.getElementById('analyticsWidget');
+    if (analyticsWidget) {
+      analyticsWidget.style.display = 'block';
+    }
+    
+    // Show the selected date section
+    const selectedDateSection = document.getElementById('selectedDateSection');
+    if (selectedDateSection) {
+      selectedDateSection.style.display = 'block';
+      
+      // Smooth scroll to the selected date section after a short delay
+      setTimeout(() => {
+        selectedDateSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+    
+    // Update analytics widget
+    updateAnalyticsWidget(dateKey, dayData);
+    
+    // Update dashboard display
+    updateDashboardDisplay(dateKey, dayData);
+    
+    if (!dayData) { 
+      console.log("No data found for date:", dateKey);
+      return; 
+    }
+    
+  } catch (error) {
+    console.error("Error loading date data:", error);
+    // Still show widgets even if there's an error, but with no data
+    const analyticsWidget = document.getElementById('analyticsWidget');
+    const selectedDateSection = document.getElementById('selectedDateSection');
+    if (analyticsWidget) analyticsWidget.style.display = 'block';
+    if (selectedDateSection) selectedDateSection.style.display = 'block';
+    updateAnalyticsWidget(dateKey, null);
+    updateDashboardDisplay(dateKey, null);
+  }
+}
+
+/* ---- Update analytics widget with productivity stats ---- */
+function updateAnalyticsWidget(dateKey, dayData) {
+  const analyticsDate = document.getElementById('analyticsDate');
+  const productiveTimeEl = document.getElementById('productiveTime');
+  const neutralTimeEl = document.getElementById('neutralTime');
+  const wasteTimeEl = document.getElementById('wasteTime');
+  const productiveBar = document.getElementById('productiveBar');
+  const neutralBar = document.getElementById('neutralBar');
+  const wasteBar = document.getElementById('wasteBar');
+  
+  // Format the date nicely
+  const dateObj = new Date(dateKey + 'T12:00:00');
+  analyticsDate.textContent = dateObj.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  console.log('Updating analytics for:', dateKey, 'with data:', dayData);
+  
+  if (!dayData || !dayData.activities || dayData.activities.length === 0) {
+    console.log('No activities data found for', dateKey);
+    // No data available
+    productiveTimeEl.textContent = '0m';
+    neutralTimeEl.textContent = '0m';
+    wasteTimeEl.textContent = '0m';
+    productiveBar.style.width = '0%';
+    neutralBar.style.width = '0%';
+    wasteBar.style.width = '0%';
+    return;
+  }
+  
+  // Calculate category totals with better error handling
+  const categoryTotals = { productive: 0, neutral: 0, waste: 0 };
+  
+  dayData.activities.forEach((activity, index) => {
+    console.log(`Processing activity ${index}:`, activity);
+    
+    let minutes = 0;
+    
+    // Check if activity has direct minutes field (your current format)
+    if (activity.minutes && typeof activity.minutes === 'number') {
+      minutes = activity.minutes;
+      console.log(`Using direct minutes: ${minutes}`);
+    }
+    // Check for your current database format (start/end instead of startTime/endTime)
+    else if (activity.start && activity.end) {
+      try {
+        const startTime = activity.start.toDate ? activity.start.toDate() : new Date(activity.start);
+        const endTime = activity.end.toDate ? activity.end.toDate() : new Date(activity.end);
+        
+        // Validate dates
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+          console.warn('Invalid date found in activity:', activity);
+          return;
+        }
+        
+        // Calculate duration in minutes
+        minutes = Math.max(0, (endTime - startTime) / (1000 * 60));
+        console.log(`Calculated minutes from start/end times: ${minutes}`);
+      } catch (error) {
+        console.error('Error processing activity start/end time:', error, activity);
+        return;
+      }
+    }
+    // Fallback to startTime/endTime format
+    else if (activity.startTime && activity.endTime) {
+      try {
+        const startTime = activity.startTime.toDate ? activity.startTime.toDate() : new Date(activity.startTime);
+        const endTime = activity.endTime.toDate ? activity.endTime.toDate() : new Date(activity.endTime);
+        
+        // Validate dates
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+          console.warn('Invalid date found in activity:', activity);
+          return;
+        }
+        
+        // Calculate duration in minutes
+        minutes = Math.max(0, (endTime - startTime) / (1000 * 60));
+        console.log(`Calculated minutes from startTime/endTime: ${minutes}`);
+      } catch (error) {
+        console.error('Error processing activity time:', error, activity);
+        return;
+      }
+    } else {
+      console.warn('Activity has no time data:', activity);
+      return;
+    }
+    
+    if (minutes > 0) {
+      const category = (activity.category || 'neutral').toLowerCase();
+      
+      // Ensure category is valid
+      if (['productive', 'neutral', 'waste'].includes(category)) {
+        categoryTotals[category] = (categoryTotals[category] || 0) + minutes;
+        console.log(`Added ${minutes.toFixed(1)} minutes to ${category} category`);
+      } else {
+        console.warn('Unknown category:', category, 'defaulting to neutral');
+        categoryTotals.neutral = (categoryTotals.neutral || 0) + minutes;
+      }
+    }
+  });
+  
+  console.log('Final category totals:', categoryTotals);
+  
+  // Format time display with better formatting
+  const formatTime = (minutes) => {
+    if (minutes < 1) return '0m';
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    
+    if (hours === 0) {
+      return `${mins}m`;
+    } else if (mins === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${mins}m`;
+    }
+  };
+  
+  productiveTimeEl.textContent = formatTime(categoryTotals.productive);
+  neutralTimeEl.textContent = formatTime(categoryTotals.neutral);
+  wasteTimeEl.textContent = formatTime(categoryTotals.waste);
+  
+  // Calculate percentages for progress bar
+  const totalTime = categoryTotals.productive + categoryTotals.neutral + categoryTotals.waste;
+  console.log('Total tracked time:', formatTime(totalTime));
+  
+  if (totalTime > 0) {
+    const productivePct = Math.round((categoryTotals.productive / totalTime) * 100);
+    const neutralPct = Math.round((categoryTotals.neutral / totalTime) * 100);
+    const wastePct = Math.round((categoryTotals.waste / totalTime) * 100);
+    
+    console.log('Percentages - Productive:', productivePct, 'Neutral:', neutralPct, 'Waste:', wastePct);
+    
+    productiveBar.style.width = `${productivePct}%`;
+    neutralBar.style.width = `${neutralPct}%`;
+    wasteBar.style.width = `${wastePct}%`;
+  } else {
+    productiveBar.style.width = '0%';
+    neutralBar.style.width = '0%';
+    wasteBar.style.width = '0%';
+  }
+}
+
+/* ---- Update dashboard display with detailed data ---- */
+function updateDashboardDisplay(dateKey, dayData) {
+  const selectedDateTitle = document.getElementById('selectedDateTitle');
+  const selectedDateSubtitle = document.getElementById('selectedDateSubtitle');
+  const sleepInfo = document.getElementById('sleepInfo');
+  const activitiesList = document.getElementById('activitiesList');
+  const tasksInfo = document.getElementById('tasksInfo');
+  
+  // Format the date for title
+  const dateObj = new Date(dateKey + 'T12:00:00');
+  const formattedDate = dateObj.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  selectedDateTitle.textContent = `📅 Data for ${formattedDate}`;
+  selectedDateSubtitle.textContent = `Your activities and analytics for ${formattedDate}`;
+  
+  if (!dayData) {
+    sleepInfo.innerHTML = '<p>No sleep data available for this date</p>';
+    activitiesList.innerHTML = '<p>No activities recorded for this date</p>';
+    tasksInfo.innerHTML = '<p>No tasks set for this date</p>';
+    return;
+  }
+  
+  // Display sleep data
+  if (dayData.sleep) {
+    const sleep = dayData.sleep;
+    let sleepContent = '<div class="sleep-info">';
+    
+    if (sleep.sleptAt) {
+      const sleptAtTime = sleep.sleptAt.toDate ? sleep.sleptAt.toDate() : new Date(sleep.sleptAt);
+      sleepContent += `<div class="sleep-stat"><span>💤 Slept at:</span><span>${sleptAtTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
+    }
+    
+    if (sleep.wakeUpAt) {
+      const wakeUpTime = sleep.wakeUpAt.toDate ? sleep.wakeUpAt.toDate() : new Date(sleep.wakeUpAt);
+      sleepContent += `<div class="sleep-stat"><span>⏰ Wake up at:</span><span>${wakeUpTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`;
+    }
+    
+    if (sleep.sleptAt && sleep.wakeUpAt) {
+      const sleptTime = sleep.sleptAt.toDate ? sleep.sleptAt.toDate() : new Date(sleep.sleptAt);
+      const wakeTime = sleep.wakeUpAt.toDate ? sleep.wakeUpAt.toDate() : new Date(sleep.wakeUpAt);
+      const duration = (wakeTime - sleptTime) / (1000 * 60); // minutes
+      const hours = Math.floor(duration / 60);
+      const minutes = Math.round(duration % 60);
+      sleepContent += `<div class="sleep-stat"><span>🛌 Duration:</span><span>${hours}h ${minutes}m</span></div>`;
+    }
+    
+    sleepContent += '</div>';
+    sleepInfo.innerHTML = sleepContent;
+  } else {
+    sleepInfo.innerHTML = '<p>No sleep data available for this date</p>';
+  }
+  
+  // Display activities
+  if (dayData.activities && dayData.activities.length > 0) {
+    let activitiesContent = '';
+    
+    // Separate activities with different time formats
+    const activitiesWithStartEnd = dayData.activities.filter(activity => activity.start && activity.end);
+    const activitiesWithStartTime = dayData.activities.filter(activity => activity.startTime && activity.endTime && !activity.start);
+    const activitiesWithMinutes = dayData.activities.filter(activity => activity.minutes && !activity.start && !activity.startTime);
+    
+    // Sort activities with start/end times by start time
+    const sortedStartEndActivities = activitiesWithStartEnd.sort((a, b) => {
+      try {
+        const aTime = a.start?.toDate ? a.start.toDate() : new Date(a.start);
+        const bTime = b.start?.toDate ? b.start.toDate() : new Date(b.start);
+        return aTime - bTime;
+      } catch (error) {
+        console.error('Error sorting start/end activities:', error);
+        return 0;
+      }
+    });
+    
+    // Sort activities with startTime/endTime
+    const sortedStartTimeActivities = activitiesWithStartTime.sort((a, b) => {
+      try {
+        const aTime = a.startTime?.toDate ? a.startTime.toDate() : new Date(a.startTime);
+        const bTime = b.startTime?.toDate ? b.startTime.toDate() : new Date(b.startTime);
+        return aTime - bTime;
+      } catch (error) {
+        console.error('Error sorting startTime activities:', error);
+        return 0;
+      }
+    });
+    
+    console.log('Displaying', sortedStartEndActivities.length, 'start/end activities,', sortedStartTimeActivities.length, 'startTime activities, and', activitiesWithMinutes.length, 'minute-based activities');
+    
+    // Display start/end activities first
+    sortedStartEndActivities.forEach((activity, index) => {
+      const category = (activity.category || 'neutral').toLowerCase();
+      const emoji = getCategoryEmoji(category);
+      
+      let timeString = '';
+      try {
+        const startTime = activity.start.toDate ? activity.start.toDate() : new Date(activity.start);
+        const endTime = activity.end.toDate ? activity.end.toDate() : new Date(activity.end);
+        
+        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
+          const duration = Math.max(0, (endTime - startTime) / (1000 * 60)); // minutes
+          const hours = Math.floor(duration / 60);
+          const minutes = Math.round(duration % 60);
+          
+          const formatDuration = () => {
+            if (duration < 1) return '< 1m';
+            if (hours === 0) return `${minutes}m`;
+            if (minutes === 0) return `${hours}h`;
+            return `${hours}h ${minutes}m`;
+          };
+          
+          timeString = `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${formatDuration()})`;
+        } else {
+          timeString = 'Invalid time data';
+        }
+      } catch (error) {
+        console.error('Error formatting activity time:', error, activity);
+        timeString = 'Time formatting error';
+      }
+      
+      const activityLabel = activity.label || activity.activity || `Activity ${index + 1}`;
+      
+      activitiesContent += `
+        <div class="activity-item ${category}">
+          <div class="activity-time">${timeString}</div>
+          <div class="activity-description">${activityLabel}</div>
+          <span class="activity-category ${category}">${emoji} ${category}</span>
+        </div>
+      `;
+    });
+    
+    // Display startTime activities
+    sortedStartTimeActivities.forEach((activity, index) => {
+      const category = (activity.category || 'neutral').toLowerCase();
+      const emoji = getCategoryEmoji(category);
+      
+      let timeString = '';
+      try {
+        const startTime = activity.startTime.toDate ? activity.startTime.toDate() : new Date(activity.startTime);
+        const endTime = activity.endTime.toDate ? activity.endTime.toDate() : new Date(activity.endTime);
+        
+        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
+          const duration = Math.max(0, (endTime - startTime) / (1000 * 60)); // minutes
+          const hours = Math.floor(duration / 60);
+          const minutes = Math.round(duration % 60);
+          
+          const formatDuration = () => {
+            if (duration < 1) return '< 1m';
+            if (hours === 0) return `${minutes}m`;
+            if (minutes === 0) return `${hours}h`;
+            return `${hours}h ${minutes}m`;
+          };
+          
+          timeString = `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${formatDuration()})`;
+        } else {
+          timeString = 'Invalid time data';
+        }
+      } catch (error) {
+        console.error('Error formatting activity time:', error, activity);
+        timeString = 'Time formatting error';
+      }
+      
+      const activityLabel = activity.label || activity.activity || `Activity ${index + 1}`;
+      
+      activitiesContent += `
+        <div class="activity-item ${category}">
+          <div class="activity-time">${timeString}</div>
+          <div class="activity-description">${activityLabel}</div>
+          <span class="activity-category ${category}">${emoji} ${category}</span>
+        </div>
+      `;
+    });
+    
+    // Display minute-based activities
+    activitiesWithMinutes.forEach((activity, index) => {
+      const category = (activity.category || 'neutral').toLowerCase();
+      const emoji = getCategoryEmoji(category);
+      
+      let timeString = '';
+      if (activity.minutes && activity.minutes > 0) {
+        const totalMinutes = activity.minutes;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        
+        if (hours === 0) {
+          timeString = `Duration: ${minutes}m`;
+        } else if (minutes === 0) {
+          timeString = `Duration: ${hours}h`;
+        } else {
+          timeString = `Duration: ${hours}h ${minutes}m`;
+        }
+      } else {
+        timeString = 'Duration: Unknown';
+      }
+      
+      const activityLabel = activity.label || activity.activity || `Activity ${index + 1}`;
+      
+      activitiesContent += `
+        <div class="activity-item ${category}">
+          <div class="activity-time">${timeString}</div>
+          <div class="activity-description">${activityLabel}</div>
+          <span class="activity-category ${category}">${emoji} ${category}</span>
+        </div>
+      `;
+    });
+    
+    activitiesList.innerHTML = activitiesContent;
+  } else {
+    activitiesList.innerHTML = '<p>No activities recorded for this date</p>';
+  }
+  
+  // Display tasks
+  if (dayData.tasks && dayData.tasks.length > 0) {
+    let tasksContent = '<div class="tasks-info">';
+    
+    dayData.tasks.forEach((task, index) => {
+      const isCompleted = task.done || false;
+      tasksContent += `
+        <div class="task-item ${isCompleted ? 'completed' : ''}">
+          <div class="task-checkbox ${isCompleted ? 'completed' : ''}"></div>
+          <div class="task-text">${task.text || `Task ${index + 1}`}</div>
+        </div>
+      `;
+    });
+    
+    if (dayData.avoidance) {
+      tasksContent += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);"><strong>🚫 Avoid:</strong> ${dayData.avoidance}</div>`;
+    }
+    
+    tasksContent += '</div>';
+    tasksInfo.innerHTML = tasksContent;
+  } else {
+    tasksInfo.innerHTML = '<p>No tasks set for this date</p>';
+  }
+}
 
 /* ---- Show today's date nicely ---- */
 document.getElementById("currentDate").textContent =
@@ -445,9 +899,48 @@ window.removeRoutineEntry = function(button) {
 /* ---- Auth check: only proceed if user is signed in ---- */
 onUserReady((user) => {
   if (!user) {
-    // Redirect to sign-in if not authenticated
+    console.log('No user authenticated - redirecting to sign-in...');
     setTimeout(() => {
       window.location.href = "index.html";
-    }, 2000); // Give user 2 seconds to see the page before redirect
+    }, 2000);
+  } else {
+    console.log('User authenticated successfully');
+    setupCalendarFunctionality();
+    
+    // Auto-load today's data on page load
+    const today = todayId();
+    const todayElement = document.querySelector(`[data-date="${today}"]`);
+    if (todayElement) {
+      todayElement.classList.add('selected');
+      loadDateData(today);
+    }
   }
 });
+
+// Backup initialization after DOM load in case auth doesn't trigger
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded - backup calendar initialization');
+  setTimeout(() => {
+    setupCalendarFunctionality();
+  }, 1000); // Wait 1 second for auth to potentially complete
+});
+
+// Test function for manual debugging
+window.testCalendar = function() {
+  console.log('Testing calendar manually...');
+  setupCalendarFunctionality();
+  
+  // Test showing analytics widget
+  const analyticsWidget = document.getElementById('analyticsWidget');
+  if (analyticsWidget) {
+    analyticsWidget.style.display = 'block';
+    console.log('Analytics widget should now be visible');
+  }
+  
+  // Test showing selected date section
+  const selectedDateSection = document.getElementById('selectedDateSection');
+  if (selectedDateSection) {
+    selectedDateSection.style.display = 'block';
+    console.log('Selected date section should now be visible');
+  }
+};

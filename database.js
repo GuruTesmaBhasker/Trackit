@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, addDoc, collection,
-  updateDoc, serverTimestamp, Timestamp, getDocs
+  updateDoc, serverTimestamp, Timestamp, getDocs, query, where
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
 
 
@@ -244,4 +244,31 @@ export async function updateActivityCategory(activityId, newCategory, dateKey = 
 /* ----- Get current user ----- */
 export function getCurrentUser() {
   return auth.currentUser;
+}
+
+/* ----- Get all daily documents for a date range (for analytics) ----- */
+export async function getDateRange(startDate, endDate) {
+  const dailyRef = collection(db, "daily");
+  const q = query(
+    dailyRef, 
+    where("date", ">=", startDate),
+    where("date", "<=", endDate)
+  );
+  const snapshot = await getDocs(q);
+  
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+}
+
+/* ----- Helper to format date for display ----- */
+export function formatDateForDisplay(dateKey) {
+  const date = new Date(dateKey + 'T12:00:00');
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 }

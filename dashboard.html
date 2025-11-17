@@ -12,19 +12,12 @@
     <div class="app-layout">
 
         <aside class="sidebar left-sidebar">
-            <div class="glass-panel profile-card">
-                <div class="avatar">🚀</div>
-                <div class="user-info">
-                    <h3>My Dashboard</h3>
-                    <span class="badge">Pro Member</span>
-                </div>
-            </div>
 
             <nav class="nav-menu">
-                <a href="#" class="nav-item active">
+                <a href="dashboard.html" class="nav-item active">
                     <span class="icon">🏠</span> Home
                 </a>
-                <a href="#" class="nav-item">
+                <a href="tracking.html" class="nav-item">
                     <span class="icon">📊</span> Analytics
                 </a>
                 <a href="#" class="nav-item">
@@ -172,19 +165,38 @@
                     </section>
                 </main>
 
-                <!-- History Section (Date Picker moved to last) -->
-                <section class="history-section" id="historySection">
-                    <div class="date-picker-section">
-                        <label for="datePicker">📅 View different date:</label>
-                        <input type="date" id="datePicker" class="date-picker">
-                        <button id="loadDateData" class="btn btn-secondary">History</button>
+                <!-- Selected Date Data Display -->
+                <section class="selected-date-section" id="selectedDateSection" style="display: none;">
+                    <div class="section-header">
+                        <h2 id="selectedDateTitle">📅 Selected Date Data</h2>
+                        <p id="selectedDateSubtitle">View your activities and analytics for the selected date</p>
                     </div>
-                    <div class="tracking-link" style="margin-top: 20px; text-align: center;">
-                        <a href="tracking.html" class="btn btn-primary" style="text-decoration: none;">
-                            📊 View Activity Tracking
-                        </a>
+
+                    <!-- Sleep Data Display -->
+                    <div class="sleep-data-display" id="sleepDataDisplay">
+                        <h3>😴 Sleep Information</h3>
+                        <div class="sleep-info" id="sleepInfo">
+                            <p>No sleep data available for this date</p>
+                        </div>
+                    </div>
+
+                    <!-- Activities Display -->
+                    <div class="activities-display" id="activitiesDisplay">
+                        <h3>📋 Activities & Timeline</h3>
+                        <div class="activities-list" id="activitiesList">
+                            <p>No activities recorded for this date</p>
+                        </div>
+                    </div>
+
+                    <!-- Tasks Display -->
+                    <div class="tasks-display" id="tasksDisplay">
+                        <h3>🎯 Daily Tasks</h3>
+                        <div class="tasks-info" id="tasksInfo">
+                            <p>No tasks set for this date</p>
+                        </div>
                     </div>
                 </section>
+
 
                 <footer>
                     <p>Every day is a new opportunity to be your best self 💪</p>
@@ -200,13 +212,40 @@
             </div>
 
             <div class="glass-panel widget-calendar">
-                <h4>November 2025</h4>
-                <div class="cal-grid">
+                <h4 id="calendarMonth">November 2025</h4>
+                <div class="cal-grid" id="calendarGrid">
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                    <span class="dim">26</span><span class="dim">27</span><span class="dim">28</span><span class="dim">29</span><span class="dim">30</span><span class="dim">31</span><span>1</span>
-                    <span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
-                    <span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
-                    <span>16</span><span class="today">17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span>
+                    <span class="dim clickable-date" data-date="2025-10-26">26</span><span class="dim clickable-date" data-date="2025-10-27">27</span><span class="dim clickable-date" data-date="2025-10-28">28</span><span class="dim clickable-date" data-date="2025-10-29">29</span><span class="dim clickable-date" data-date="2025-10-30">30</span><span class="dim clickable-date" data-date="2025-10-31">31</span><span class="clickable-date" data-date="2025-11-01">1</span>
+                    <span class="clickable-date" data-date="2025-11-02">2</span><span class="clickable-date" data-date="2025-11-03">3</span><span class="clickable-date" data-date="2025-11-04">4</span><span class="clickable-date" data-date="2025-11-05">5</span><span class="clickable-date" data-date="2025-11-06">6</span><span class="clickable-date" data-date="2025-11-07">7</span><span class="clickable-date" data-date="2025-11-08">8</span>
+                    <span class="clickable-date" data-date="2025-11-09">9</span><span class="clickable-date" data-date="2025-11-10">10</span><span class="clickable-date" data-date="2025-11-11">11</span><span class="clickable-date" data-date="2025-11-12">12</span><span class="clickable-date" data-date="2025-11-13">13</span><span class="clickable-date" data-date="2025-11-14">14</span><span class="clickable-date" data-date="2025-11-15">15</span>
+                    <span class="clickable-date" data-date="2025-11-16">16</span><span class="today clickable-date" data-date="2025-11-17">17</span><span class="clickable-date" data-date="2025-11-18">18</span><span class="clickable-date" data-date="2025-11-19">19</span><span class="clickable-date" data-date="2025-11-20">20</span><span class="clickable-date" data-date="2025-11-21">21</span><span class="clickable-date" data-date="2025-11-22">22</span>
+                </div>
+            </div>
+
+            <!-- Analytics Widget -->
+            <div class="glass-panel widget-analytics" id="analyticsWidget" style="display: none;">
+                <h4>📊 Day Analytics</h4>
+                <div class="analytics-date" id="analyticsDate">Select a date</div>
+                <div class="analytics-stats" id="analyticsStats">
+                    <div class="stat-item productive">
+                        <div class="stat-label">✅ Productive</div>
+                        <div class="stat-value" id="productiveTime">0h 0m</div>
+                    </div>
+                    <div class="stat-item neutral">
+                        <div class="stat-label">⚪ Neutral</div>
+                        <div class="stat-value" id="neutralTime">0h 0m</div>
+                    </div>
+                    <div class="stat-item waste">
+                        <div class="stat-label">❌ Waste</div>
+                        <div class="stat-value" id="wasteTime">0h 0m</div>
+                    </div>
+                </div>
+                <div class="analytics-progress">
+                    <div class="progress-bar">
+                        <div class="fill productive" id="productiveBar" style="width: 0%"></div>
+                        <div class="fill neutral" id="neutralBar" style="width: 0%"></div>
+                        <div class="fill waste" id="wasteBar" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
