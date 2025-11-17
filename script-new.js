@@ -410,6 +410,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
+// Live Clock for the Widget
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const clockElement = document.getElementById('liveClock');
+    if(clockElement) clockElement.innerText = timeString;
+}
+setInterval(updateClock, 1000);
+updateClock(); // Run immediately
+
+// Sidebar Clock Update Function
+function updateSidebarClock() {
+    const now = new Date();
+    const timeEl = document.getElementById('sidebarClock');
+    if(timeEl) {
+        timeEl.innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+}
+setInterval(updateSidebarClock, 1000);
+updateSidebarClock();
+
+// Global function for removing routine entries (needed for onclick handlers)
+window.removeRoutineEntry = function(button) {
+  const entry = button.closest('.routine-entry');
+  const container = document.getElementById('routineEntries');
+  
+  // Keep at least one entry
+  if (container.children.length > 1) {
+    entry.remove();
+  }
+};
 
 /* ---- Auth check: only proceed if user is signed in ---- */
 onUserReady((user) => {

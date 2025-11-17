@@ -9,171 +9,75 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">🌱</div>
-                </div>
-                <div class="user-profile">
-                    <div class="profile-pic">👤</div>
-                    <span class="notification-dot"></span>
-                </div>
-            </div>
-            
-            <div class="greeting">
-                <h1>Good Morning, <span id="userName">[User's Name]</span>!</h1>
-                <p class="date" id="currentDate">Tuesday, October 24th</p>
-            </div>
-        </header>
-
-        <main>
-            <div class="dashboard-grid">
-                <!-- Left Column -->
-                <div class="left-column">
-                    <!-- Daily Overview -->
-                    <section class="overview-section">
-                        <h2>Daily Overview</h2>
-                        <div class="overview-charts">
-                            <div class="chart-container">
-                                <h3>Sleep Duration</h3>
-                                <div class="circular-progress sleep-chart">
-                                    <canvas id="sleepChart" width="120" height="120"></canvas>
-                                    <div class="chart-center">
-                                        <span class="chart-value" id="sleepDuration">7h 45m</span>
-                                        <span class="chart-label">Productive</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="chart-container">
-                                <h3>Activity Zones</h3>
-                                <div class="circular-progress activity-chart">
-                                    <canvas id="activityChart" width="120" height="120"></canvas>
-                                    <div class="chart-center">
-                                        <span class="chart-value" id="activityDuration">2h 3m</span>
-                                        <span class="chart-label">Relaxation</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Energy Levels -->
-                    <section class="energy-section">
-                        <h2>Energy Levels</h2>
-                        <div class="energy-chart">
-                            <canvas id="energyChart" width="300" height="150"></canvas>
-                        </div>
-                    </section>
-
-                    <!-- Analytics Section -->
-                    <section class="analytics-section">
-                        <h2>📊 Analytics Dashboard</h2>
-                        <div class="analytics-grid">
-                            <!-- Today's Activity Breakdown -->
-                            <div class="analytics-item">
-                                <h4>Today — Activity Breakdown</h4>
-                                <canvas id="activityCircle" width="300" height="300"></canvas>
-                            </div>
-
-                            <!-- Last 7 Days Sleep Duration -->
-                            <div class="analytics-item">
-                                <h4>Last 7 Days — Sleep Duration</h4>
-                                <canvas id="sleepBarChart" width="700" height="280"></canvas>
-                            </div>
-
-                            <!-- Last 7 Days Productivity Trends -->
-                            <div class="analytics-item">
-                                <h4>Last 7 Days — Productivity Breakdown</h4>
-                                <canvas id="productivityTrendsChart" width="700" height="280"></canvas>
-                            </div>
-
-                            <!-- Daily Productivity Summary -->
-                            <div class="analytics-item">
-                                <h4>Today — Time Allocation</h4>
-                                <canvas id="dailyProductivityChart" width="300" height="300"></canvas>
-                            </div>
-
-                            <!-- Today's Activity Breakdown -->
-                            <div class="analytics-item">
-                                <h4>Today — Activity Breakdown</h4>
-                                <canvas id="activityCircle" width="300" height="300"></canvas>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- Right Column -->
-                <div class="right-column">
-                    <!-- Scheduled Activities -->
-                    <section class="schedule-section">
-                        <div class="activity-block completed">
-                            <div class="time-slot">09:00 - 10:00</div>
-                            <div class="activity-content">
-                                <div class="checkmark">✅</div>
-                                <div class="activity-info">
-                                    <div class="activity-name">Deep Work Session</div>
-                                    <div class="activity-subtitle">Yoga & Stretch</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="activity-block completed">
-                            <div class="time-slot">13:00 - 14:00</div>
-                            <div class="activity-content">
-                                <div class="checkmark">✅</div>
-                                <div class="activity-info">
-                                    <div class="activity-name">Mindfulness Walk</div>
-                                    <div class="activity-subtitle">Yoga & Stretch</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Dynamic activities will be added here -->
-                        <div id="dynamicActivities"></div>
-                    </section>
-
-                    <!-- Recent Activities -->
-                    <section class="recent-section">
-                        <h2>Recent Activities</h2>
-                        <div class="recent-list">
-                            <div class="recent-item">
-                                <div class="recent-icon">⏰</div>
-                                <span>07:00 AM - Wake up</span>
-                            </div>
-                            <div class="recent-item">
-                                <div class="recent-icon">🍳</div>
-                                <span>Breakfast</span>
-                            </div>
-                            <div class="recent-item">
-                                <div class="recent-icon">🎯</div>
-                                <span>Plan Day</span>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-
-            <!-- Navigation -->
-            <nav class="bottom-nav">
-                <a href="dashboard.html" class="nav-item">
-                    <span>🏠</span>
-                    <span>Home</span>
-                </a>
-                <a href="tracking.html" class="nav-item active">
-                    <span>📊</span>
-                    <span>Tracking</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <span>⚙️</span>
-                    <span>Settings</span>
-                </a>
-            </nav>
-        </main>
+    <div class="analytics-dashboard">
+    
+    <div class="dashboard-header">
+        <h2>Analytics Dashboard</h2>
+        <div class="header-accent"></div>
     </div>
+
+    <div class="charts-grid">
+        
+        <div class="glass-card">
+            <div class="card-header">
+                <span class="period">TODAY</span>
+                <span class="title">Activity Breakdown</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="activityCircle"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header">
+                <span class="period">LAST 7 DAYS</span>
+                <span class="title">Sleep Duration</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="sleepBarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header">
+                <span class="period">LAST 7 DAYS</span>
+                <span class="title">Productivity Trends</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="productivityTrendsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header">
+                <span class="period">TODAY</span>
+                <span class="title">Time Allocation</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="dailyProductivityChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
 
     <script type="module" src="tracking.js"></script>
     <script type="module" src="analytics.js"></script>
+    
+    <!-- Direct test call for debugging -->
+    <script>
+        // Test if we can manually call analytics after everything loads
+        window.addEventListener('load', () => {
+            console.log('🎯 Window loaded, testing analytics...');
+            setTimeout(() => {
+                if (window.renderAnalytics) {
+                    console.log('🔧 Manual analytics test call...');
+                    window.renderAnalytics();
+                } else {
+                    console.warn('❌ renderAnalytics not found on window');
+                }
+            }, 2000);
+        });
+    </script>
 </body>
 </html>

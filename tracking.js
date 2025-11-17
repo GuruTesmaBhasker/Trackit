@@ -54,31 +54,24 @@ class ActivityTracker {
         this.setupEventListeners();
         
         // Render comprehensive analytics charts
+        console.log('🎯 Starting analytics initialization...');
+        console.log('Chart.js available:', typeof Chart !== 'undefined');
+        
         setTimeout(async () => {
             try {
+                console.log('🎯 DOM ready, calling renderAnalytics...');
                 await renderAnalytics();
-                console.log('Analytics charts rendered successfully');
+                console.log('✅ Analytics charts rendered successfully');
             } catch (error) {
-                console.error('Error rendering analytics:', error);
+                console.error('💥 Error rendering analytics:', error);
+                console.error('Stack trace:', error.stack);
             }
-        }, 1000); // Give time for DOM elements to be ready
+        }, 1500); // Give more time for everything to load
     }
 
     updateDateTime() {
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        const dateStr = this.currentDate.toLocaleDateString('en-US', options);
-        document.getElementById('currentDate').textContent = dateStr;
-        
-        // Update user name if available
-        const user = getCurrentUser();
-        if (user && user.displayName) {
-            document.getElementById('userName').textContent = user.displayName;
-        }
+        // Header removed - no need to update date/username display
+        console.log('Date updated:', this.currentDate.toLocaleDateString());
     }
 
     async loadUserData() {
