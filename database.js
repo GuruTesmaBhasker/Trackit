@@ -142,9 +142,9 @@ export async function addRoutineActivity({ start, end, label, category = null, d
 
   await addDoc(collection(ref, "activities"), {
     label: (label || "").trim() || "Activity",
-    start: startTS,
-    end: endTS,
-    minutes: mins,
+    startTime: startTS,  // Changed from 'start' to 'startTime'
+    endTime: endTS,      // Changed from 'end' to 'endTime'
+    minutes: mins,       // Keep minutes for compatibility
     category: finalCategory,
     createdAt: serverTimestamp()
   });

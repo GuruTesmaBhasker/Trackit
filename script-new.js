@@ -42,11 +42,9 @@ function getCategoryEmoji(category) {
 
 /* ---- Date + header ---- */
 const currentDateEl = document.getElementById("currentDate");
-const datePicker = document.getElementById("datePicker");
-const loadDateDataBtn = document.getElementById("loadDateData");
+
 function renderHeaderDate(d = new Date()) {
   currentDateEl.textContent = d.toLocaleDateString(undefined, { weekday: "long", year:"numeric", month:"long", day:"numeric" });
-  datePicker.value = todayId(d);
 }
 renderHeaderDate();
 
@@ -250,6 +248,7 @@ document.getElementById("saveEvening").addEventListener("click", async () => {
 });
 
 
+
 /* ---- Calendar functionality ---- */
 function setupCalendarFunctionality() {
   const calendarDates = document.querySelectorAll('.clickable-date');
@@ -350,9 +349,9 @@ function updateAnalyticsWidget(dateKey, dayData) {
   if (!dayData || !dayData.activities || dayData.activities.length === 0) {
     console.log('No activities data found for', dateKey);
     // No data available
-    productiveTimeEl.textContent = '0m';
-    neutralTimeEl.textContent = '0m';
-    wasteTimeEl.textContent = '0m';
+    productiveTimeEl.textContent = '0h 0m';
+    neutralTimeEl.textContent = '0h 0m';
+    wasteTimeEl.textContent = '0h 0m';
     productiveBar.style.width = '0%';
     neutralBar.style.width = '0%';
     wasteBar.style.width = '0%';
@@ -365,68 +364,53 @@ function updateAnalyticsWidget(dateKey, dayData) {
   dayData.activities.forEach((activity, index) => {
     console.log(`Processing activity ${index}:`, activity);
     
-    let minutes = 0;
+    // Handle both old format (start/end) and new format (startTime/endTime)
+    const startTime = activity.startTime || activity.start;
+    const endTime = activity.endTime || activity.end;
     
-    // Check if activity has direct minutes field (your current format)
-    if (activity.minutes && typeof activity.minutes === 'number') {
-      minutes = activity.minutes;
-      console.log(`Using direct minutes: ${minutes}`);
-    }
-    // Check for your current database format (start/end instead of startTime/endTime)
-    else if (activity.start && activity.end) {
+    if (startTime && endTime) {
+      let startDate, endDate;
+      
+      // Handle Firestore Timestamp objects
       try {
-        const startTime = activity.start.toDate ? activity.start.toDate() : new Date(activity.start);
-        const endTime = activity.end.toDate ? activity.end.toDate() : new Date(activity.end);
+        startDate = startTime.toDate ? startTime.toDate() : new Date(startTime);
+        endDate = endTime.toDate ? endTime.toDate() : new Date(endTime);
         
         // Validate dates
-        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           console.warn('Invalid date found in activity:', activity);
           return;
         }
         
         // Calculate duration in minutes
-        minutes = Math.max(0, (endTime - startTime) / (1000 * 60));
-        console.log(`Calculated minutes from start/end times: ${minutes}`);
-      } catch (error) {
-        console.error('Error processing activity start/end time:', error, activity);
-        return;
-      }
-    }
-    // Fallback to startTime/endTime format
-    else if (activity.startTime && activity.endTime) {
-      try {
-        const startTime = activity.startTime.toDate ? activity.startTime.toDate() : new Date(activity.startTime);
-        const endTime = activity.endTime.toDate ? activity.endTime.toDate() : new Date(activity.endTime);
+        const minutes = Math.max(0, (endDate - startDate) / (1000 * 60));
         
-        // Validate dates
-        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-          console.warn('Invalid date found in activity:', activity);
-          return;
+        const category = (activity.category || 'neutral').toLowerCase();
+        
+        // Ensure category is valid
+        if (['productive', 'neutral', 'waste'].includes(category)) {
+          categoryTotals[category] = (categoryTotals[category] || 0) + minutes;
+          console.log(`Added ${minutes.toFixed(1)} minutes to ${category} category`);
+        } else {
+          console.warn('Unknown category:', category, 'defaulting to neutral');
+          categoryTotals.neutral = (categoryTotals.neutral || 0) + minutes;
         }
-        
-        // Calculate duration in minutes
-        minutes = Math.max(0, (endTime - startTime) / (1000 * 60));
-        console.log(`Calculated minutes from startTime/endTime: ${minutes}`);
       } catch (error) {
         console.error('Error processing activity time:', error, activity);
-        return;
       }
-    } else {
-      console.warn('Activity has no time data:', activity);
-      return;
-    }
-    
-    if (minutes > 0) {
+    } else if (activity.minutes && typeof activity.minutes === 'number') {
+      // Fallback: if only minutes are stored without start/end times
       const category = (activity.category || 'neutral').toLowerCase();
+      const minutes = Math.max(0, activity.minutes);
       
-      // Ensure category is valid
       if (['productive', 'neutral', 'waste'].includes(category)) {
         categoryTotals[category] = (categoryTotals[category] || 0) + minutes;
-        console.log(`Added ${minutes.toFixed(1)} minutes to ${category} category`);
+        console.log(`Added ${minutes} minutes (from minutes field) to ${category} category`);
       } else {
-        console.warn('Unknown category:', category, 'defaulting to neutral');
         categoryTotals.neutral = (categoryTotals.neutral || 0) + minutes;
       }
+    } else {
+      console.warn('Activity missing time data:', activity);
     }
   });
   
@@ -533,62 +517,76 @@ function updateDashboardDisplay(dateKey, dayData) {
   if (dayData.activities && dayData.activities.length > 0) {
     let activitiesContent = '';
     
-    // Separate activities with different time formats
-    const activitiesWithStartEnd = dayData.activities.filter(activity => activity.start && activity.end);
-    const activitiesWithStartTime = dayData.activities.filter(activity => activity.startTime && activity.endTime && !activity.start);
-    const activitiesWithMinutes = dayData.activities.filter(activity => activity.minutes && !activity.start && !activity.startTime);
+    // Sort activities by start time with better error handling
+    const sortedActivities = dayData.activities
+      .filter(activity => {
+        // Accept activities with either format or just minutes
+        const hasTimeRange = (activity.startTime || activity.start) && (activity.endTime || activity.end);
+        const hasMinutes = activity.minutes && typeof activity.minutes === 'number';
+        return hasTimeRange || hasMinutes;
+      })
+      .sort((a, b) => {
+        try {
+          // Handle both field name formats
+          const aStart = a.startTime || a.start;
+          const bStart = b.startTime || b.start;
+          
+          if (!aStart || !bStart) return 0; // Keep relative order if no start times
+          
+          const aTime = aStart.toDate ? aStart.toDate() : new Date(aStart);
+          const bTime = bStart.toDate ? bStart.toDate() : new Date(bStart);
+          return aTime - bTime;
+        } catch (error) {
+          console.error('Error sorting activities:', error);
+          return 0;
+        }
+      });
     
-    // Sort activities with start/end times by start time
-    const sortedStartEndActivities = activitiesWithStartEnd.sort((a, b) => {
-      try {
-        const aTime = a.start?.toDate ? a.start.toDate() : new Date(a.start);
-        const bTime = b.start?.toDate ? b.start.toDate() : new Date(b.start);
-        return aTime - bTime;
-      } catch (error) {
-        console.error('Error sorting start/end activities:', error);
-        return 0;
-      }
-    });
+    console.log('Displaying', sortedActivities.length, 'sorted activities');
     
-    // Sort activities with startTime/endTime
-    const sortedStartTimeActivities = activitiesWithStartTime.sort((a, b) => {
-      try {
-        const aTime = a.startTime?.toDate ? a.startTime.toDate() : new Date(a.startTime);
-        const bTime = b.startTime?.toDate ? b.startTime.toDate() : new Date(b.startTime);
-        return aTime - bTime;
-      } catch (error) {
-        console.error('Error sorting startTime activities:', error);
-        return 0;
-      }
-    });
-    
-    console.log('Displaying', sortedStartEndActivities.length, 'start/end activities,', sortedStartTimeActivities.length, 'startTime activities, and', activitiesWithMinutes.length, 'minute-based activities');
-    
-    // Display start/end activities first
-    sortedStartEndActivities.forEach((activity, index) => {
+    sortedActivities.forEach((activity, index) => {
       const category = (activity.category || 'neutral').toLowerCase();
       const emoji = getCategoryEmoji(category);
       
       let timeString = '';
       try {
-        const startTime = activity.start.toDate ? activity.start.toDate() : new Date(activity.start);
-        const endTime = activity.end.toDate ? activity.end.toDate() : new Date(activity.end);
+        // Handle both field name formats
+        const startTime = activity.startTime || activity.start;
+        const endTime = activity.endTime || activity.end;
         
-        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
-          const duration = Math.max(0, (endTime - startTime) / (1000 * 60)); // minutes
-          const hours = Math.floor(duration / 60);
-          const minutes = Math.round(duration % 60);
+        if (startTime && endTime) {
+          const startDate = startTime.toDate ? startTime.toDate() : new Date(startTime);
+          const endDate = endTime.toDate ? endTime.toDate() : new Date(endTime);
           
-          const formatDuration = () => {
-            if (duration < 1) return '< 1m';
+          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            const duration = Math.max(0, (endDate - startDate) / (1000 * 60)); // minutes
+            
+            const formatDuration = (mins) => {
+              if (mins < 1) return '< 1m';
+              const hours = Math.floor(mins / 60);
+              const minutes = Math.round(mins % 60);
+              if (hours === 0) return `${minutes}m`;
+              if (minutes === 0) return `${hours}h`;
+              return `${hours}h ${minutes}m`;
+            };
+            
+            timeString = `${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${formatDuration(duration)})`;
+          }
+        } else if (activity.minutes && typeof activity.minutes === 'number') {
+          // Fallback for activities with only minutes
+          const formatDuration = (mins) => {
+            if (mins < 1) return '< 1m';
+            const hours = Math.floor(mins / 60);
+            const minutes = Math.round(mins % 60);
             if (hours === 0) return `${minutes}m`;
             if (minutes === 0) return `${hours}h`;
             return `${hours}h ${minutes}m`;
           };
-          
-          timeString = `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${formatDuration()})`;
-        } else {
-          timeString = 'Invalid time data';
+          timeString = `Duration: ${formatDuration(activity.minutes)}`;
+        }
+        
+        if (!timeString) {
+          timeString = 'No time data';
         }
       } catch (error) {
         console.error('Error formatting activity time:', error, activity);
@@ -606,82 +604,7 @@ function updateDashboardDisplay(dateKey, dayData) {
       `;
     });
     
-    // Display startTime activities
-    sortedStartTimeActivities.forEach((activity, index) => {
-      const category = (activity.category || 'neutral').toLowerCase();
-      const emoji = getCategoryEmoji(category);
-      
-      let timeString = '';
-      try {
-        const startTime = activity.startTime.toDate ? activity.startTime.toDate() : new Date(activity.startTime);
-        const endTime = activity.endTime.toDate ? activity.endTime.toDate() : new Date(activity.endTime);
-        
-        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
-          const duration = Math.max(0, (endTime - startTime) / (1000 * 60)); // minutes
-          const hours = Math.floor(duration / 60);
-          const minutes = Math.round(duration % 60);
-          
-          const formatDuration = () => {
-            if (duration < 1) return '< 1m';
-            if (hours === 0) return `${minutes}m`;
-            if (minutes === 0) return `${hours}h`;
-            return `${hours}h ${minutes}m`;
-          };
-          
-          timeString = `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${formatDuration()})`;
-        } else {
-          timeString = 'Invalid time data';
-        }
-      } catch (error) {
-        console.error('Error formatting activity time:', error, activity);
-        timeString = 'Time formatting error';
-      }
-      
-      const activityLabel = activity.label || activity.activity || `Activity ${index + 1}`;
-      
-      activitiesContent += `
-        <div class="activity-item ${category}">
-          <div class="activity-time">${timeString}</div>
-          <div class="activity-description">${activityLabel}</div>
-          <span class="activity-category ${category}">${emoji} ${category}</span>
-        </div>
-      `;
-    });
-    
-    // Display minute-based activities
-    activitiesWithMinutes.forEach((activity, index) => {
-      const category = (activity.category || 'neutral').toLowerCase();
-      const emoji = getCategoryEmoji(category);
-      
-      let timeString = '';
-      if (activity.minutes && activity.minutes > 0) {
-        const totalMinutes = activity.minutes;
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = Math.round(totalMinutes % 60);
-        
-        if (hours === 0) {
-          timeString = `Duration: ${minutes}m`;
-        } else if (minutes === 0) {
-          timeString = `Duration: ${hours}h`;
-        } else {
-          timeString = `Duration: ${hours}h ${minutes}m`;
-        }
-      } else {
-        timeString = 'Duration: Unknown';
-      }
-      
-      const activityLabel = activity.label || activity.activity || `Activity ${index + 1}`;
-      
-      activitiesContent += `
-        <div class="activity-item ${category}">
-          <div class="activity-time">${timeString}</div>
-          <div class="activity-description">${activityLabel}</div>
-          <span class="activity-category ${category}">${emoji} ${category}</span>
-        </div>
-      `;
-    });
-    
-    activitiesList.innerHTML = activitiesContent;
+    activitiesList.innerHTML = activitiesContent || '<p>No activities recorded for this date</p>';
   } else {
     activitiesList.innerHTML = '<p>No activities recorded for this date</p>';
   }

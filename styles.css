@@ -178,10 +178,11 @@ header::before {
 }
 
 /* 5. Section Cards (Morning, Evening, Sleep) */
- .morning-section, 
- .evening-section, 
- .sleep-tracker-section,
- .task-generator {
+.morning-section, 
+.evening-section, 
+.history-section, 
+.sleep-tracker-section,
+.task-generator {
     background: var(--bg-card);
     border-radius: 24px;
     padding: 30px;
