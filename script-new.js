@@ -2,7 +2,9 @@
 import {
   onUserReady, todayId, saveSleepData, addRoutineActivity,
   saveMorningPlan, updateTaskCompletion, saveEveningReflection, getDay,
-  updateActivityCategory, formatDateForDisplay
+  updateActivityCategory, formatDateForDisplay, checkDuplicateActivity, 
+  checkMorningRoutineSaved, markMorningRoutineSaved,
+  generateDailyTasks, saveGeneratedTasks, getGeneratedTasks, getTasksFromCategory
 } from "./database.js";
 
 // Helper functions for categories (replaced classify.js)
@@ -197,7 +199,25 @@ if (defaultEntry) {
 
 // save all routine entries to Firestore
 saveMorningRoutineBtn.addEventListener("click", async () => {
+  const currentDate = todayId();
+  
+  // Check if morning routine already saved today
+  const alreadySaved = await checkMorningRoutineSaved(currentDate);
+  if (alreadySaved) {
+    const proceed = confirm(
+      "You have already saved your morning routine for today. \n\n" +
+      "Do you want to add more activities? (This will add to your existing routine, not replace it)"
+    );
+    if (!proceed) {
+      return;
+    }
+  }
+  
   const rows = Array.from(routineEntriesEl.querySelectorAll(".routine-entry"));
+  let savedCount = 0;
+  let duplicateCount = 0;
+  let isFirstSave = !alreadySaved;
+  
   for (const row of rows) {
     const start = row.querySelector(".routine-start")?.value;
     const end   = row.querySelector(".routine-end")?.value;
@@ -206,10 +226,34 @@ saveMorningRoutineBtn.addEventListener("click", async () => {
     const category = categoryChip?.dataset.category || "neutral";
     
     if (start && end && label) {
-      await addRoutineActivity({ start, end, label, category, dateKey: todayId() });
+      const result = await addRoutineActivity({ 
+        start, end, label, category, 
+        dateKey: currentDate, 
+        isBatch: isFirstSave // Only mark as saved on first batch
+      });
+      if (result.success) {
+        savedCount++;
+      } else {
+        duplicateCount++;
+        console.log(`Skipped duplicate: ${label}`);
+      }
+      isFirstSave = false; // Only first activity marks the routine as saved
     }
   }
-  alert("Morning routine saved!");
+  
+  if (alreadySaved) {
+    if (duplicateCount > 0) {
+      alert(`Additional activities processed! ${savedCount} new activities added, ${duplicateCount} duplicates skipped.`);
+    } else {
+      alert(`Additional activities added! ${savedCount} new activities saved.`);
+    }
+  } else {
+    if (duplicateCount > 0) {
+      alert(`Morning routine saved! ${savedCount} activities saved, ${duplicateCount} duplicates skipped.`);
+    } else {
+      alert(`Morning routine saved! ${savedCount} activities saved.`);
+    }
+  }
 });
 
 /* ---- Morning plan (Top 3 + avoidance) ---- */
@@ -634,6 +678,38 @@ function updateDashboardDisplay(dateKey, dayData) {
   }
 }
 
+/* ---- Check morning routine status ---- */
+async function checkMorningRoutineStatus() {
+  try {
+    const today = todayId();
+    const alreadySaved = await checkMorningRoutineSaved(today);
+    
+    if (alreadySaved) {
+      const saveBtn = document.getElementById('saveMorningRoutine');
+      if (saveBtn) {
+        saveBtn.textContent = 'Add More Activities';
+        saveBtn.style.background = 'linear-gradient(135deg, #ff9a56, #ff6b6b)';
+        saveBtn.title = 'Morning routine already saved. Click to add more activities.';
+      }
+      
+      // Add a small indicator
+      const morningSection = document.querySelector('.morning-tracker-section');
+      if (morningSection && !morningSection.querySelector('.routine-saved-indicator')) {
+        const indicator = document.createElement('div');
+        indicator.className = 'routine-saved-indicator';
+        indicator.innerHTML = `
+          <div style="background: rgba(0, 255, 136, 0.2); border: 1px solid #00ff88; border-radius: 8px; padding: 8px 12px; margin-bottom: 15px; color: #00ff88; font-size: 0.9rem;">
+            ✅ Morning routine already saved for today!
+          </div>
+        `;
+        morningSection.insertBefore(indicator, morningSection.querySelector('h3').nextSibling);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking morning routine status:', error);
+  }
+}
+
 /* ---- Show today's date nicely ---- */
 document.getElementById("currentDate").textContent =
   new Date().toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
@@ -657,6 +733,51 @@ document.getElementById("currentDate").textContent =
   }
 })();
 
+/* ---- Display Generated Tasks Function ---- */
+function displayGeneratedTasks(generatedTasks) {
+  const taskCategoriesDiv = document.getElementById("taskCategories");
+  const generatedTasksSection = document.getElementById("generatedTasksSection");
+  
+  if (!taskCategoriesDiv || !generatedTasksSection) return;
+  
+  // Clear existing content
+  taskCategoriesDiv.innerHTML = '';
+  
+  // Category icons and titles
+  const categoryInfo = {
+    'LEARN': { icon: '📘', title: 'Learn' },
+    'CREATE': { icon: '🛠️', title: 'Create' },
+    'REFLECT': { icon: '🧠', title: 'Reflect' },
+    'CAREER': { icon: '🎯', title: 'Career / Future' },
+    'DISCIPLINE': { icon: '🧩', title: 'Discipline / Habits' },
+    'LIFE_SKILLS': { icon: '🧩', title: 'Life Skills' }
+  };
+  
+  Object.keys(generatedTasks).forEach(category => {
+    const tasks = generatedTasks[category];
+    const info = categoryInfo[category] || { icon: '📋', title: category };
+    
+    const categoryDiv = document.createElement('div');
+    categoryDiv.className = 'task-category';
+    
+    categoryDiv.innerHTML = `
+      <div class="category-header">
+        <span class="category-icon">${info.icon}</span>
+        <span class="category-title">${info.title}</span>
+        <span class="category-count">${tasks.length}</span>
+      </div>
+      <ul class="task-list">
+        ${tasks.map(task => `<li class="task-list-item">${task}</li>`).join('')}
+      </ul>
+    `;
+    
+    taskCategoriesDiv.appendChild(categoryDiv);
+  });
+  
+  // Show the section
+  generatedTasksSection.style.display = 'block';
+}
+
 /* ---- Check if tasks already generated today ---- */
 async function checkAndLoadTodaysTasks() {
   try {
@@ -674,6 +795,12 @@ async function checkAndLoadTodaysTasks() {
       document.getElementById("task1Label").textContent = todayData.tasks[0]?.text || "Task 1";
       document.getElementById("task2Label").textContent = todayData.tasks[1]?.text || "Task 2";
       document.getElementById("task3Label").textContent = todayData.tasks[2]?.text || "Task 3";
+      
+      // Load and display generated tasks if available
+      const generatedTasks = await getGeneratedTasks(todayId());
+      if (generatedTasks) {
+        displayGeneratedTasks(generatedTasks);
+      }
       
       // Disable the generate button
       if (regenerateTasksBtn) {
@@ -710,67 +837,57 @@ document.addEventListener('DOMContentLoaded', async () => {
   regenerateTasksBtn.addEventListener("click", async (event) => {
     event.preventDefault();
     
-    const taskBank = [
-      "Read 20 pages of a book",
-      "Exercise for 30 minutes", 
-      "Meditate for 10 minutes",
-      "Learn something new for 1 hour",
-      "Call a friend or family member",
-      "Organize your workspace",
-      "Practice a skill for 30 minutes",
-      "Write in a journal",
-      "Take a walk in nature",
-      "Complete a creative project",
-      "Plan your week ahead",
-      "Clean and declutter your space",
-      "Cook a healthy meal",
-      "Practice gratitude - list 5 things",
-      "Work on a personal goal",
-      "Listen to an educational podcast",
-      "Do breathing exercises",
-      "Review and update your goals",
-      "Spend time in sunlight",
-      "Connect with nature"
-    ];
-    
-    const avoidanceSuggestions = [
-      "Social media scrolling",
-      "Procrastination",
-      "Negative self-talk",
-      "Junk food",
-      "Excessive phone use",
-      "Complaining",
-      "Making excuses",
-      "Overthinking",
-      "Comparing to others",
-      "Wasting time"
-    ];
-    
     try {
-      // Randomly select 3 unique tasks
-      const shuffled = [...taskBank].sort(() => 0.5 - Math.random());
-      const selectedTasks = shuffled.slice(0, 3);
-      const randomAvoidance = avoidanceSuggestions[Math.floor(Math.random() * avoidanceSuggestions.length)];
+      // Generate 3 tasks from each category
+      const generatedTasks = generateDailyTasks();
       
-      // Fill the task inputs with generated tasks
-      document.getElementById("task1").value = selectedTasks[0];
-      document.getElementById("task2").value = selectedTasks[1];
-      document.getElementById("task3").value = selectedTasks[2];
-      document.getElementById("avoidance").value = randomAvoidance;
+      // Create a formatted display for the tasks
+      const taskDisplays = [];
+      Object.keys(generatedTasks).forEach(category => {
+        const categoryName = category.replace('_', ' ').toLowerCase();
+        const capitalizedCategory = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+        taskDisplays.push(`\n${capitalizedCategory}:`);
+        generatedTasks[category].forEach((task, index) => {
+          taskDisplays.push(`${index + 1}. ${task}`);
+        });
+      });
       
-      // Save the generated tasks to database with proper structure
+      // For the top 3 tasks input, mix tasks from different categories
+      const allTasks = [];
+      Object.values(generatedTasks).forEach(categoryTasks => {
+        allTasks.push(...categoryTasks);
+      });
+      const shuffled = [...allTasks].sort(() => 0.5 - Math.random());
+      const top3Tasks = shuffled.slice(0, 3);
+      
+      // Fill the task inputs with mixed top 3 tasks
+      document.getElementById("task1").value = top3Tasks[0];
+      document.getElementById("task2").value = top3Tasks[1];
+      document.getElementById("task3").value = top3Tasks[2];
+      
+      // Save the generated tasks to database
+      await saveGeneratedTasks(generatedTasks, todayId());
+      
+      // Also save the top 3 as morning plan
       await saveMorningPlan({
-        task1: selectedTasks[0],
-        task2: selectedTasks[1], 
-        task3: selectedTasks[2],
-        avoidance: randomAvoidance,
+        task1: top3Tasks[0],
+        task2: top3Tasks[1], 
+        task3: top3Tasks[2],
+        avoidance: "Procrastination and distractions",
         dateKey: todayId()
       });
       
       // Update evening labels immediately
-      document.getElementById("task1Label").textContent = selectedTasks[0];
-      document.getElementById("task2Label").textContent = selectedTasks[1];
-      document.getElementById("task3Label").textContent = selectedTasks[2];
+      document.getElementById("task1Label").textContent = top3Tasks[0];
+      document.getElementById("task2Label").textContent = top3Tasks[1];
+      document.getElementById("task3Label").textContent = top3Tasks[2];
+      
+      // Show the generated tasks in a detailed alert
+      const taskDisplay = `🎯 Daily Tasks Generated!\n\nTop 3 Priority Tasks:\n1. ${top3Tasks[0]}\n2. ${top3Tasks[1]}\n3. ${top3Tasks[2]}\n\nFull Task Bank:${taskDisplays.join('\n')}\n\n✨ Your tasks are ready! Focus on the top 3 first, then explore other categories throughout the day.`;
+      alert(taskDisplay);
+      
+      // Display the categorized tasks on the page
+      displayGeneratedTasks(generatedTasks);
       
       // Disable the generate button
       regenerateTasksBtn.disabled = true;
@@ -779,9 +896,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       regenerateTasksBtn.style.cursor = "not-allowed";
       regenerateTasksBtn.title = "Tasks are already generated for today. Try again tomorrow!";
       
-      alert(`Tasks generated for ${todayId()}! These will persist all day and sync across all your devices. 🎯`);
-      
     } catch (error) {
+      console.error("Error generating tasks:", error);
       alert("Sorry, there was an error generating tasks. Please try again.");
     }
   });
@@ -819,6 +935,26 @@ window.removeRoutineEntry = function(button) {
   }
 };
 
+// Expose task generation functions globally for testing
+window.testTaskGeneration = async function() {
+  const tasks = generateDailyTasks();
+  console.log('Generated tasks:', tasks);
+  await saveGeneratedTasks(tasks);
+  displayGeneratedTasks(tasks);
+  return tasks;
+};
+
+window.showTaskBank = function() {
+  console.log('Task Bank Structure:', {
+    LEARN: getTasksFromCategory('LEARN', 25),
+    CREATE: getTasksFromCategory('CREATE', 20), 
+    REFLECT: getTasksFromCategory('REFLECT', 15),
+    CAREER: getTasksFromCategory('CAREER', 15),
+    DISCIPLINE: getTasksFromCategory('DISCIPLINE', 10),
+    LIFE_SKILLS: getTasksFromCategory('LIFE_SKILLS', 5)
+  });
+};
+
 /* ---- Auth check: only proceed if user is signed in ---- */
 onUserReady((user) => {
   if (!user) {
@@ -837,6 +973,9 @@ onUserReady((user) => {
       todayElement.classList.add('selected');
       loadDateData(today);
     }
+    
+    // Check and show morning routine status
+    checkMorningRoutineStatus();
   }
 });
 

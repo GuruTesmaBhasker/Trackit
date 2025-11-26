@@ -182,7 +182,8 @@ header::before {
 .evening-section, 
 .history-section, 
 .sleep-tracker-section,
-.task-generator {
+.task-generator,
+.generated-tasks-section {
     background: var(--bg-card);
     border-radius: 24px;
     padding: 30px;
@@ -197,16 +198,116 @@ header::before {
 .morning-section:hover, 
 .evening-section:hover, 
 .sleep-tracker-section:hover,
-.task-generator:hover {
+.task-generator:hover,
+.generated-tasks-section:hover {
     transform: translateY(-5px);
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
 }
 
+/* Generated Tasks Section Specific Styles */
+.generated-tasks-section {
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.8), rgba(15, 20, 35, 0.9));
+    border: 1px solid rgba(79, 172, 254, 0.2);
+    margin-top: 20px;
+}
+
+.generated-tasks-section h3 {
+    color: var(--neon-primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tasks-note {
+    color: var(--text-muted);
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+}
+
+.task-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.task-category {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+}
+
+.task-category:hover {
+    border-color: rgba(79, 172, 254, 0.4);
+    transform: translateY(-3px);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.category-title {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 1.1rem;
+}
+
+.category-count {
+    background: var(--neon-primary);
+    color: var(--bg-deep);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.task-list-item {
+    padding: 8px 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    transition: color 0.2s ease;
+}
+
+.task-list-item:hover {
+    color: var(--text-main);
+}
+
+.task-list-item::before {
+    content: "→";
+    color: var(--neon-primary);
+    font-weight: bold;
+    margin-top: 1px;
+}
+
+/* Responsive adjustments for task categories */
+@media (max-width: 768px) {
+    .task-categories {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Subtle Top Glow Gradient on Cards */
 .morning-section::before, 
 .evening-section::before, 
-.sleep-tracker-section::before {
+.sleep-tracker-section::before,
+.generated-tasks-section::before {
     content: '';
     position: absolute;
     top: 0;

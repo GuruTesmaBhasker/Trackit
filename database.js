@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, addDoc, collection,
-  updateDoc, serverTimestamp, Timestamp, getDocs, query, where
+  updateDoc, serverTimestamp, Timestamp, getDocs, query, where, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
 
 
@@ -129,9 +129,124 @@ export async function saveSleepData({ sleptAt, wakeUpAt, dateKey = todayId() }) 
   await updateDoc(ref, payload);
 }
 
+/* ----- Check if morning routine already saved for a date ----- */
+export async function checkMorningRoutineSaved(dateKey = todayId()) {
+  const ref = await ensureDaily(dateKey);
+  const dailySnap = await getDoc(ref);
+  
+  if (!dailySnap.exists()) {
+    return false;
+  }
+  
+  const data = dailySnap.data();
+  return data.morningRoutineSaved === true;
+}
+
+/* ----- Mark morning routine as saved ----- */
+export async function markMorningRoutineSaved(dateKey = todayId()) {
+  const ref = await ensureDaily(dateKey);
+  await updateDoc(ref, {
+    morningRoutineSaved: true,
+    morningRoutineSavedAt: serverTimestamp()
+  });
+}
+
+/* ----- Remove existing duplicate activities ----- */
+export async function removeDuplicateActivities(dateKey = todayId()) {
+  const ref = await ensureDaily(dateKey);
+  const activitiesSnap = await getDocs(collection(ref, "activities"));
+  
+  if (activitiesSnap.empty) {
+    return { removed: 0, message: 'No activities found' };
+  }
+  
+  const activities = activitiesSnap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+  
+  // Group activities by label, start time, and end time
+  const activityGroups = new Map();
+  
+  activities.forEach(activity => {
+    const label = activity.label?.trim().toLowerCase() || '';
+    const startTime = activity.startTime?.toMillis() || activity.start?.toMillis() || 0;
+    const endTime = activity.endTime?.toMillis() || activity.end?.toMillis() || 0;
+    
+    const key = `${label}-${startTime}-${endTime}`;
+    
+    if (!activityGroups.has(key)) {
+      activityGroups.set(key, []);
+    }
+    activityGroups.get(key).push(activity);
+  });
+  
+  let removedCount = 0;
+  
+  // For each group, keep the oldest (first created) and delete the rest
+  for (const [key, group] of activityGroups) {
+    if (group.length > 1) {
+      // Sort by creation time (oldest first)
+      group.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis() || 0;
+        const bTime = b.createdAt?.toMillis() || 0;
+        return aTime - bTime;
+      });
+      
+      // Keep the first (oldest), delete the rest
+      const toDelete = group.slice(1);
+      
+      for (const duplicate of toDelete) {
+        try {
+          await deleteDoc(doc(db, "daily", dateKey, "activities", duplicate.id));
+          removedCount++;
+          console.log(`Removed duplicate: ${duplicate.label} at ${new Date(duplicate.startTime?.toMillis() || 0).toLocaleTimeString()}`);
+        } catch (error) {
+          console.error('Error deleting duplicate:', error);
+        }
+      }
+    }
+  }
+  
+  return { removed: removedCount, message: `Removed ${removedCount} duplicate activities` };
+}
+
+/* ----- Check for duplicate activities ----- */
+export async function checkDuplicateActivity({ start, end, label, dateKey = todayId() }) {
+  const ref = await ensureDaily(dateKey);
+  const startTS = asTimestamp(start);
+  const endTS = asTimestamp(end);
+  
+  // Get all activities for this date
+  const activitiesSnap = await getDocs(collection(ref, "activities"));
+  
+  // Check if any existing activity matches exactly
+  for (const doc of activitiesSnap.docs) {
+    const activity = doc.data();
+    
+    // Compare label, start time, and end time
+    const sameLabel = activity.label?.trim().toLowerCase() === label?.trim().toLowerCase();
+    const sameStartTime = activity.startTime?.toMillis() === startTS?.toMillis() || activity.start?.toMillis() === startTS?.toMillis();
+    const sameEndTime = activity.endTime?.toMillis() === endTS?.toMillis() || activity.end?.toMillis() === endTS?.toMillis();
+    
+    if (sameLabel && sameStartTime && sameEndTime) {
+      return true; // Duplicate found
+    }
+  }
+  
+  return false; // No duplicate found
+}
+
 /* ----- Morning routine activities (time blocks) ----- */
 // Stored under: /daily/{dateKey}/activities/{autoId}
-export async function addRoutineActivity({ start, end, label, category = null, dateKey = todayId() }) {
+export async function addRoutineActivity({ start, end, label, category = null, dateKey = todayId(), isBatch = false }) {
+  // Check for duplicates first
+  const isDuplicate = await checkDuplicateActivity({ start, end, label, dateKey });
+  if (isDuplicate) {
+    console.log('Duplicate activity detected, skipping save:', label);
+    return { success: false, message: 'Duplicate activity - not saved' };
+  }
+  
   const ref = await ensureDaily(dateKey);
   const startTS = asTimestamp(start);
   const endTS   = asTimestamp(end);
@@ -153,6 +268,13 @@ export async function addRoutineActivity({ start, end, label, category = null, d
   const snap = await getDoc(ref);
   const prev = snap.exists() && snap.data().totals?.routineMinutes || 0;
   await updateDoc(ref, { "totals.routineMinutes": prev + mins });
+  
+  // If this is part of a batch save (morning routine), mark it as saved
+  if (isBatch) {
+    await markMorningRoutineSaved(dateKey);
+  }
+  
+  return { success: true, message: 'Activity saved successfully' };
 }
 
 /* ----- Save Top-3 + avoidance ----- */
@@ -260,6 +382,159 @@ export async function getDateRange(startDate, endDate) {
     id: doc.id,
     ...doc.data()
   }));
+}
+
+/* ----- Task Bank System ----- */
+const TASK_BANK = {
+  "LEARN": [
+    "Revise one Statistics concept",
+    "Solve 3 SQL queries",
+    "Practice Pandas for 20 minutes",
+    "Learn one new Excel feature (Pivot, XLOOKUP, Power Query)",
+    "Review yesterday's notes",
+    "Study one probability topic (conditional, Bayes, distributions)",
+    "Watch a 10-min data analysis tutorial",
+    "Practice Matplotlib/Plotly for 15 minutes",
+    "Read Python documentation for a function you rarely use",
+    "Complete one LeetCode easy problem",
+    "Solve 1 case study (data/business)",
+    "Revise DAX formulas",
+    "Study Power BI visual formatting",
+    "Revise OOP concepts in Python",
+    "Learn one regex pattern and test it",
+    "Practice typing for 10 minutes",
+    "Read one article on decision-making",
+    "Learn a new shortcut in Excel or VS Code",
+    "Practice debugging Python code",
+    "Apply a statistics formula in a small example",
+    "Review one dataset and identify patterns",
+    "Study an algorithm or data structure",
+    "Learn one cybersecurity basic concept",
+    "Solve 5 MCQs of aptitude",
+    "Study one real-world analytics case (Google, Uber, Swiggy)"
+  ],
+  "CREATE": [
+    "Update today's progress on GitHub",
+    "Improve a section of your portfolio website",
+    "Create a mini Excel dashboard",
+    "Write 1 page of clean documentation",
+    "Add responsive design improvements to your site",
+    "Clean a dataset and upload to GitHub",
+    "Build a simple automation script (Python)",
+    "Add one new feature to SeeEvent",
+    "Create a quick Power BI visualization",
+    "Build a small HTML/CSS component from scratch",
+    "Write a blog post about what you learned today",
+    "Record a 2–3 min explanation video for yourself",
+    "Redesign a small UI component to look cleaner",
+    "Make a dataset profile summary (mean, mode, IQR)",
+    "Build a helper library function in Python",
+    "Write a simple SQL stored procedure",
+    "Optimize a piece of code in your project",
+    "Improve your README.md files",
+    "Create a simple statistical chart (histogram/scatter) with Python",
+    "Add one new personal project idea to your list"
+  ],
+  "REFLECT": [
+    "Journal for 3 minutes",
+    "Write 3 things you're grateful for",
+    "Plan tomorrow's top 3 tasks",
+    "Identify what distracted you today",
+    "Review your top achievements this week",
+    "Write down one fear and break it logically",
+    "Ask: 'What is one thing I must improve tomorrow?'",
+    "Rate today's productivity from 1–10",
+    "Write a micro-journal: 'How did I use my time?'",
+    "Write one thing that made you feel proud today",
+    "Set a daily intention for tomorrow",
+    "Reflect on one mistake & what you learned",
+    "Ask yourself: 'Why do I want to succeed?'",
+    "Write a 3-line summary of your day",
+    "Note one improvement for your morning routine"
+  ],
+  "CAREER": [
+    "Search for 3 internships",
+    "Read one job description fully",
+    "Update your LinkedIn headline",
+    "Add a new project to your resume",
+    "Practice 3 HR interview questions",
+    "Note 5 skills required for your dream role",
+    "Watch a productivity/career video (5–10 min)",
+    "Improve your resume formatting",
+    "Apply to 1 internship or job",
+    "Study company case studies",
+    "Create a list of companies you want to apply to",
+    "Write a career vision paragraph",
+    "Analyze one skill gap",
+    "Clean your LinkedIn followers & feed",
+    "Update your 'About Me' in portfolio"
+  ],
+  "DISCIPLINE": [
+    "Avoid social media for 1 hour",
+    "Follow your planned schedule strictly for 2 hours",
+    "Drink 3–4 glasses of water",
+    "Practice focus mode for 20 minutes",
+    "Set phone away while working for 30 minutes",
+    "Clean and organize your desk",
+    "Meditate for 2 minutes",
+    "Do a mini digital detox (10 min no phone)",
+    "Fix a small problem immediately (no procrastination)",
+    "Spend 5 minutes thinking about your long-term goals"
+  ],
+  "LIFE_SKILLS": [
+    "Clean or organize one section of your room",
+    "Track your monthly spending",
+    "Review your personal goals",
+    "Learn one finance concept (very basic)",
+    "Reply to pending emails/messages"
+  ]
+};
+
+/* ----- Generate 3 random tasks from each category ----- */
+export function generateDailyTasks() {
+  const result = {};
+  
+  Object.keys(TASK_BANK).forEach(category => {
+    const tasks = TASK_BANK[category];
+    const shuffled = [...tasks].sort(() => Math.random() - 0.5);
+    result[category] = shuffled.slice(0, 3);
+  });
+  
+  return result;
+}
+
+/* ----- Get a specific number of tasks from a category ----- */
+export function getTasksFromCategory(category, count = 3) {
+  const tasks = TASK_BANK[category.toUpperCase()];
+  if (!tasks) return [];
+  
+  const shuffled = [...tasks].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+/* ----- Get all available categories ----- */
+export function getTaskCategories() {
+  return Object.keys(TASK_BANK);
+}
+
+/* ----- Save generated tasks for a specific date ----- */
+export async function saveGeneratedTasks(generatedTasks, dateKey = todayId()) {
+  const ref = await ensureDaily(dateKey);
+  await updateDoc(ref, {
+    generatedTasks: generatedTasks,
+    tasksGeneratedAt: serverTimestamp()
+  });
+}
+
+/* ----- Get generated tasks for a specific date ----- */
+export async function getGeneratedTasks(dateKey = todayId()) {
+  const ref = doc(db, "daily", dateKey);
+  const snap = await getDoc(ref);
+  
+  if (!snap.exists()) return null;
+  
+  const data = snap.data();
+  return data.generatedTasks || null;
 }
 
 /* ----- Helper to format date for display ----- */
