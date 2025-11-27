@@ -28,6 +28,17 @@
                 </a>
             </nav>
             
+            <div class="glass-panel streak-widget">
+                <div class="streak-header">
+                    <span class="streak-icon">🔥</span>
+                    <div class="streak-info">
+                        <div class="streak-number" id="streakCount">0</div>
+                        <small class="streak-label">Day Streak</small>
+                    </div>
+                </div>
+                <div class="streak-message" id="streakMessage">Keep it up!</div>
+            </div>
+
             <div class="glass-panel mini-stat">
                 <small>Weekly Focus</small>
                 <div class="progress-bar"><div class="fill" style="width: 75%"></div></div>
@@ -260,9 +271,10 @@
                 </div>
             </div>
 
-            <div class="glass-panel widget-quote">
-                <p>"The only way to do great work is to love what you do."</p>
-                <small>— Steve Jobs</small>
+            <div class="glass-panel widget-quote" id="quoteWidget">
+                <p id="quoteText">Loading inspiring quote...</p>
+                <small id="quoteAuthor">—</small>
+                <button class="quote-refresh" id="refreshQuote" title="New Quote">🔄</button>
             </div>
 
         </aside>

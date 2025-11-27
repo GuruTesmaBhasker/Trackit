@@ -95,6 +95,115 @@ body {
     font-size: 1.1rem;
 }
 
+/* Streak Widget */
+.streak-widget {
+  background: linear-gradient(135deg, rgba(255, 87, 34, 0.1), rgba(255, 152, 0, 0.1));
+  border: 1px solid rgba(255, 87, 34, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.streak-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff5722, #ff9800, #ffc107);
+}
+
+.streak-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.streak-icon {
+  font-size: 2.5rem;
+  animation: flicker 2s infinite alternate;
+}
+
+@keyframes flicker {
+  0% { transform: scale(1) rotate(-2deg); }
+  50% { transform: scale(1.05) rotate(1deg); }
+  100% { transform: scale(1) rotate(-1deg); }
+}
+
+.streak-info {
+  flex: 1;
+}
+
+.streak-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--neon-primary);
+  line-height: 1;
+}
+
+.streak-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.streak-message {
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+/* Enhanced Quote Widget */
+.widget-quote {
+  position: relative;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.widget-quote p {
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin-bottom: 10px;
+  color: var(--text-main);
+}
+
+.widget-quote small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  align-self: flex-end;
+  margin-bottom: 5px;
+}
+
+.quote-refresh {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.quote-refresh:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--neon-primary);
+  transform: rotate(180deg);
+}
+
 /* Responsive Design for Dashboard Grid */
 @media (max-width: 768px) {
     .dashboard-grid {
@@ -737,7 +846,32 @@ footer {
     .clock-date { color: var(--neon-primary); font-weight: 600; }
 
     /* Mini Calendar */
-    .widget-calendar h4 { margin-bottom: 15px; text-align: center; color: white; }
+    .widget-calendar h4 { 
+        margin-bottom: 15px; 
+        text-align: center; 
+        color: white; 
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .calendar-nav {
+        background: rgba(0, 242, 254, 0.2);
+        border: 1px solid var(--neon-primary);
+        color: var(--neon-primary);
+        padding: 5px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .calendar-nav:hover {
+        background: var(--neon-primary);
+        color: var(--bg-deep);
+        box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+    }
+    
     .cal-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
