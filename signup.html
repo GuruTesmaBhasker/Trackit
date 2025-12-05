@@ -3,26 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Daily Motivator</title>
+    <title>Sign Up - Track It</title>
     <link rel="stylesheet" href="auth.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="text-effect.js" defer></script>
+    <script src="click-spark.js" defer></script>
     <script type="module" src="Register.js" defer></script>
 </head>
 <body>
-    <div class="auth-container">
-        <div class="logo">
-            <h1>Daily Motivator ⚡</h1>
-            <p class="tagline">Start strong, finish stronger 🚀</p>
+    <div class="split-screen">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <div class="panel-content">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <span>Track It</span>
+                </div>
+                
+                <div class="hero-text">
+                    <h1>Start your journey to <br><span class="typewriter-text" data-text='["better habits.", "a new you.", "consistency."]'></span><span class="cursor">|</span></h1>
+                    <p>Create an account to start tracking your habits, visualizing your progress, and building a better lifestyle today.</p>
+                </div>
+                
+                <div class="panel-footer">
+                    <span>&copy; 2025 Track It Inc.</span>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
         </div>
-        <h2>Create Account</h2>
-        <form id="signUpForm">
-            <input type="email" id="signUpEmail" placeholder="Email" required>
-            <input type="password" id="signUpPassword" placeholder="Password" required>
-            <button type="submit">Sign Up</button>
-        </form>
-        <p>Already have an account? <a href="index.html">Sign in here</a></p>
-        <div id="signUpMessage"></div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <div class="auth-wrapper">
+                <div class="auth-header">
+                    <h2>Create an account</h2>
+                    <p>Enter your details to get started.</p>
+                </div>
+
+                <form id="signUpForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="signUpEmail">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope input-icon"></i>
+                            <input type="email" id="signUpEmail" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signUpPassword">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock input-icon"></i>
+                            <input type="password" id="signUpPassword" placeholder="Create a password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Sign up <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div class="divider">
+                    <span>Or sign up with</span>
+                </div>
+
+                <div class="social-buttons">
+                    <button class="btn-social">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+                        Google
+                    </button>
+                    <button class="btn-social">
+                        <img src="https://www.svgrepo.com/show/448224/github.svg" alt="GitHub">
+                        GitHub
+                    </button>
+                </div>
+
+                <p class="auth-footer">
+                    Already have an account? <a href="signin.html">Sign in</a>
+                </p>
+                
+                <div id="signUpMessage"></div>
+            </div>
+        </div>
     </div>
-    
 </body>
 </html>
