@@ -1,4 +1,4 @@
-import { db, auth, getTaskCategories, getTasksFromCategory } from "./database.js";
+import { db, auth, getTaskCategories, getTasksFromCategory } from "../../services/firebase.service.js";
 import { 
     collection, 
     addDoc, 

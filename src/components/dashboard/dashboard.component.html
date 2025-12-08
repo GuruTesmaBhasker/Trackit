@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monthly Habit Tracker</title>
-    <link rel="stylesheet" href="habits.css">
+    <title>Productivity Dashboard - Track It</title>
+    <link rel="stylesheet" href="dashboard.component.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="click-spark.js" defer></script>
-    <script type="module" src="habits.js" defer></script>
+    <script src="../shared/click-spark.component.js" defer></script>
+    <script type="module" src="dashboard.component.js" defer></script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <h1>📅 Monthly Habit Tracker</h1>
-                <p>Track your consistency, analyze trends, and reach your goals.</p>
+                <h1>📊 Productivity Dashboard</h1>
+                <p>Monitor your performance, analyze trends, and achieve your objectives.</p>
             </div>
             <div class="header-right">
                 <div class="year-selector">
@@ -205,6 +205,6 @@
         </div>
     </div>
 
-    <script src="habits.js"></script>
+    <script src="dashboard.component.js"></script>
 </body>
 </html>

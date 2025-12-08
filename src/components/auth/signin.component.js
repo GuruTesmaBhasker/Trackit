@@ -1,5 +1,5 @@
 // Firebase configuration and initialization
-import { auth } from "./database.js";
+import { auth } from "../../services/firebase.service.js";
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
 
 // Wait for DOM to load

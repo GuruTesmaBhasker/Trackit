@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Track It</title>
+    <link rel="stylesheet" href="auth.component.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../shared/text-effect.component.js" defer></script>
+    <script src="../shared/click-spark.component.js" defer></script>
+    <script type="module" src="signin.component.js" defer></script>
+</head>
+<body>
+    <div class="split-screen">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <div class="panel-content">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <span>Track It</span>
+                </div>
+                
+                <div class="hero-text">
+                    <h1>Build habits that <br><span class="typewriter-text" data-text='["actually stick.", "change your life.", "you can keep."]'></span><span class="cursor">|</span></h1>
+                    <p>Join thousands of users tracking their daily progress, analyzing streaks, and achieving their goals one day at a time.</p>
+                </div>
+                
+                <div class="panel-footer">
+                    <span>&copy; 2025 Track It Inc.</span>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <div class="auth-wrapper">
+                <div class="auth-header">
+                    <h2>Welcome back</h2>
+                    <p>Please enter your details to sign in.</p>
+                </div>
+
+                <form id="signInForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="signInEmail">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope input-icon"></i>
+                            <input type="email" id="signInEmail" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signInPassword">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock input-icon"></i>
+                            <input type="password" id="signInPassword" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="rememberMe">
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Sign in <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+
+                <div class="social-buttons">
+                    <button class="btn-social">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+                        Google
+                    </button>
+                    <button class="btn-social">
+                        <img src="https://www.svgrepo.com/show/448224/github.svg" alt="GitHub">
+                        GitHub
+                    </button>
+                </div>
+
+                <p class="auth-footer">
+                    Don't have an account? <a href="signup.html">Sign up for free</a>
+                </p>
+                
+                <div id="signInMessage"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
