@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadData(); // Load from Firestore
         } else {
             console.log("No user logged in, redirecting...");
-            window.location.href = "signin.html";
+            window.location.href = "../auth/signin.component.html";
         }
     });
 
