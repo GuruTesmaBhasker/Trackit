@@ -137,26 +137,47 @@
         <!-- Daily To-Do List Section -->
         <section class="todo-section">
             <div class="section-header">
-                <h2>📝 Daily To-Do List</h2>
+                <h2>📝 Daily To-Do List <span id="todoDateDisplay" style="font-size: 0.8em; color: #718096; font-weight: normal; margin-left: 10px;"></span></h2>
             </div>
             <div class="todo-container">
-                <div class="todo-input-wrapper">
-                    <input type="text" id="todoInput" placeholder="Add a new task for today...">
-                    <button id="addTodoBtn" class="btn-primary">Add</button>
+                <div class="todo-content">
+                    <div class="todo-main">
+                        <div class="todo-input-wrapper">
+                            <input type="text" id="todoInput" placeholder="Add a new task for today...">
+                            <button id="addTodoBtn" class="btn-primary">Add</button>
+                        </div>
+                        <div class="todo-list-wrapper">
+                            <table class="todo-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">Done</th>
+                                        <th>Task</th>
+                                        <th style="width: 100px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="todoListBody">
+                                    <!-- Todo items will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="todo-chart-wrapper">
+                        <canvas id="todoChart"></canvas>
+                    </div>
                 </div>
-                <div class="todo-list-wrapper">
-                    <table class="todo-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">Done</th>
-                                <th>Task</th>
-                                <th style="width: 100px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="todoListBody">
-                            <!-- Todo items will be inserted here -->
-                        </tbody>
-                    </table>
+            </div>
+        </section>
+
+        <!-- Daily Journal Section -->
+        <section class="journal-section">
+            <div class="section-header">
+                <h2>📔 Daily Journal</h2>
+            </div>
+            <div class="journal-container">
+                <textarea id="journalInput" placeholder="Reflect on your day, write down your thoughts, or list what you're grateful for..."></textarea>
+                <div class="journal-actions">
+                    <span id="journalStatus" class="save-status"></span>
+                    <button id="saveJournalBtn" class="btn-primary">Save Entry</button>
                 </div>
             </div>
         </section>

@@ -3,6 +3,7 @@ import {
     collection, 
     addDoc, 
     getDocs, 
+    getDoc,
     doc, 
     updateDoc, 
     deleteDoc, 
@@ -20,10 +21,16 @@ let habits = [];
 let todos = []; // New state for todos
 let completions = {};
 let trendChart = null;
+let todoChart = null; // New chart instance
 let currentUser = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Set today's date in header
+    const today = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('todoDateDisplay').textContent = today.toLocaleDateString('en-US', options);
+
     // Wait for auth state
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -73,6 +80,9 @@ function setupEventListeners() {
     document.getElementById('todoInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTodoManual();
     });
+
+    // Journal Listener
+    document.getElementById('saveJournalBtn').addEventListener('click', saveJournal);
 
     window.addEventListener('click', (e) => {
         if (e.target.id === 'addHabitModal') closeModal();
@@ -252,6 +262,8 @@ function renderTodos() {
         `;
         tbody.appendChild(tr);
     });
+    
+    updateTodoChart(); // Update chart whenever table renders
 }
 
 // Expose functions to window for onclick handlers
@@ -675,6 +687,9 @@ async function loadData() {
         
         // Load Todos
         await loadTodos();
+        
+        // Load Journal
+        await loadJournal();
 
         renderTable();
         updateStats();
@@ -685,11 +700,78 @@ async function loadData() {
     }
 }
 
+// --- Journal Functions ---
+
+async function loadJournal() {
+    if (!currentUser) return;
+    
+    const todayKey = getDateKey(new Date().getDate()); // Uses current year/month/day
+    
+    try {
+        // We'll use the date key (YYYY-MM-DD) as the document ID for simplicity
+        // This ensures one entry per day
+        const docRef = doc(db, `users/${currentUser.uid}/journal`, todayKey);
+        const docSnap = await getDoc(docRef);
+        
+        const journalInput = document.getElementById('journalInput');
+        if (docSnap.exists()) {
+            journalInput.value = docSnap.data().text || '';
+        } else {
+            journalInput.value = '';
+        }
+    } catch (error) {
+        console.error("Error loading journal: ", error);
+    }
+}
+
+async function saveJournal() {
+    if (!currentUser) return;
+    
+    const text = document.getElementById('journalInput').value;
+    const statusSpan = document.getElementById('journalStatus');
+    const todayKey = getDateKey(new Date().getDate());
+    
+    try {
+        const docRef = doc(db, `users/${currentUser.uid}/journal`, todayKey);
+        await setDoc(docRef, {
+            text: text,
+            updatedAt: new Date()
+        }, { merge: true });
+        
+        // Show saved status
+        statusSpan.textContent = "Saved successfully!";
+        statusSpan.classList.add('show');
+        
+        setTimeout(() => {
+            statusSpan.classList.remove('show');
+        }, 2000);
+        
+    } catch (error) {
+        console.error("Error saving journal: ", error);
+        statusSpan.textContent = "Error saving.";
+        statusSpan.style.color = "#e53e3e";
+        statusSpan.classList.add('show');
+    }
+}
+
 async function loadTodos() {
     if (!currentUser) return;
     
     try {
-        const q = query(collection(db, `users/${currentUser.uid}/todos`));
+        // Get start and end of today
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Query for todos created today
+        const q = query(
+            collection(db, `users/${currentUser.uid}/todos`),
+            where("createdAt", ">=", startOfDay),
+            where("createdAt", "<=", endOfDay)
+        );
+        
         const querySnapshot = await getDocs(q);
         
         todos = [];
@@ -707,4 +789,67 @@ async function loadTodos() {
     } catch (error) {
         console.error("Error loading todos: ", error);
     }
+}
+
+function updateTodoChart() {
+    const ctx = document.getElementById('todoChart').getContext('2d');
+    
+    const completedCount = todos.filter(t => t.completed).length;
+    const pendingCount = todos.length - completedCount;
+    
+    // If no tasks, show empty state or just 0/0
+    if (todos.length === 0) {
+        if (todoChart) {
+            todoChart.destroy();
+            todoChart = null;
+        }
+        // Optional: Draw "No Tasks" text on canvas
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = "14px Inter";
+        ctx.fillStyle = "#718096";
+        ctx.textAlign = "center";
+        ctx.fillText("No tasks for today", ctx.canvas.width/2, ctx.canvas.height/2);
+        return;
+    }
+
+    if (todoChart) {
+        todoChart.destroy();
+    }
+
+    todoChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Pending'],
+            datasets: [{
+                data: [completedCount, pendingCount],
+                backgroundColor: [
+                    '#48bb78', // Green for completed
+                    '#e2e8f0'  // Gray for pending
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Daily Progress',
+                    font: {
+                        size: 16
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
 }
