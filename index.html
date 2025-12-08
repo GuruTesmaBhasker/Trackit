@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="src/components/shared/text-effect.component.js" defer></script>
     <script src="src/components/shared/click-spark.component.js" defer></script>
-    <script type="module" src="src/components/auth/signin.component.js" defer></script>
+    <script type="module" src="src/components/auth/register.component.js" defer></script>
 </head>
 <body>
     <div class="split-screen">
@@ -18,28 +18,29 @@
         <div class="left-panel">
             <div class="panel-content">
                 <div class="logo">
-                    <i class="fas fa-chart-line"></i>
+                    <div class="logo-icon"><i class="fa-solid fa-chart-line"></i></div>
                     <span>Track It</span>
                 </div>
-                <h1 class="main-title">Welcome Back!</h1>
-                <p class="subtitle">Sign in to access your productivity dashboard and continue building better habits.</p>
                 
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <i class="fas fa-target"></i>
-                        <span>Goal Tracking</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Daily Planning</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>Analytics</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-trophy"></i>
-                        <span>Achievement System</span>
+                <div class="hero-text">
+                    <h1>Build habits that <br><span class="typewriter-text" data-text='["actually stick.", "change your life.", "you can keep."]'></span><span class="cursor">|</span></h1>
+                    <p>Join thousands of users tracking their daily progress, analyzing streaks, and achieving their goals one day at a time.</p>
+                </div>
+                
+                <div class="panel-footer">
+                    <div class="trust-indicators">
+                        <div class="trust-item">
+                            <i class="fa-solid fa-shield-check"></i>
+                            <span>Secure & Private</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="fa-solid fa-users"></i>
+                            <span>10K+ Active Users</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>2 min setup</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -49,8 +50,10 @@
         <div class="right-panel">
             <div class="auth-container">
                 <div class="auth-card">
-                    <h2>Sign In</h2>
-                    <form id="signinForm" class="auth-form">
+                    <h2>Start Your Journey</h2>
+                    <p class="auth-subtitle">Create your account and begin building lasting habits.</p>
+                    
+                    <form id="signupForm" class="auth-form">
                         <div class="form-group">
                             <label for="email">
                                 <i class="fas fa-envelope"></i>
@@ -61,16 +64,23 @@
                         <div class="form-group">
                             <label for="password">
                                 <i class="fas fa-lock"></i>
-                                Password
+                                Create Password
                             </label>
                             <input type="password" id="password" name="password" required>
                         </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">
+                                <i class="fas fa-lock-open"></i>
+                                Confirm Password
+                            </label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required>
+                        </div>
                         <button type="submit" class="auth-btn">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Sign In
+                            <i class="fas fa-user-plus"></i>
+                            Create Account
                         </button>
                     </form>
-                    <p class="auth-link">Don't have an account? <a href="src/components/auth/register.component.html">Create Account</a></p>
+                    <p class="auth-link">Already have an account? <a href="src/components/auth/signin.component.html">Sign In</a></p>
                 </div>
             </div>
         </div>
