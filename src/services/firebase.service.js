@@ -1,16 +1,14 @@
-// database.js  (type="module")
+// firebase.service.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
 import {
-  getAuth, onAuthStateChanged, // you use email/password auth
+  getAuth, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, addDoc, collection,
-  updateDoc, serverTimestamp, Timestamp, getDocs, query, where, deleteDoc
+  updateDoc, serverTimestamp, getDocs, query, where, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
 
-
-
-/* 🔧 Your Firebase config */
+/* Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyCYyTIYCX5bvN7r0BcJvLOKEON1nUaFnQk",
   authDomain: "self-improvement-7c7f6.firebaseapp.com",
@@ -25,366 +23,25 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-/* ----- Helpers ----- */
-// Local calendar date (YYYY-MM-DD) based on your device timezone (India).
+/* Helper functions */
 export function todayId(date = new Date()) {
-  // ensures local date, not UTC
   const y = date.getFullYear();
   const m = String(date.getMonth()+1).padStart(2,"0");
   const d = String(date.getDate()).padStart(2,"0");
   return `${y}-${m}-${d}`;
 }
-function asTimestamp(input) {
-  // supports <input type="time"> (HH:MM) and <input type="datetime-local">
-  if (!input) return null;
-  // if only time is given, attach today's date
-  if (/^\d{2}:\d{2}$/.test(input)) {
-    const [h, mm] = input.split(":");
-    const t = new Date();
-    t.setHours(Number(h), Number(mm), 0, 0);
-    return Timestamp.fromDate(t);
-  }
-  // datetime-local -> YYYY-MM-DDTHH:MM
-  return Timestamp.fromDate(new Date(input));
-}
-function minutesBetween(tsStart, tsEnd) {
-  if (!tsStart || !tsEnd) return 0;
-  const ms = tsEnd.toMillis() - tsStart.toMillis();
-  return Math.max(0, Math.round(ms / 60000));
-}
 
-/* ----- Auth ready ----- */
+/* Auth ready */
 export function onUserReady(cb) {
   onAuthStateChanged(auth, (user) => cb(user || null));
 }
 
-/* ----- Ensure a daily doc exists ----- */
-export async function ensureDaily(dateKey = todayId()) {
-  const ref = doc(db, "daily", dateKey);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      createdAt: serverTimestamp(),
-      date: dateKey,
-      // optional summaries you can compute later
-      completion: 0,
-      focus: null,
-      notes: "",
-      totals: { routineMinutes: 0 },
-      tasks: [],  // your top-3 if you store them
-    });
-  }
-  return ref;
-}
-
-/* ----- Sleep data ----- */
-
-// helper: convert datetime-local string or Timestamp to Date (local)
-function toDateLocal(input) {
-  if (!input) return null;
-  // If already a Firestore Timestamp
-  if (input instanceof Timestamp) return input.toDate();
-  // If ISO / datetime-local string
-  const d = new Date(input);
-  if (isNaN(d)) return null;
-  return d;
-}
-
-// helper: minutes since local midnight (0..1439)
-function minutesSinceMidnight(date) {
-  if (!date) return null;
-  return date.getHours() * 60 + date.getMinutes();
-}
-
-export async function saveSleepData({ sleptAt, wakeUpAt, dateKey = todayId() }) {
-  const ref = await ensureDaily(dateKey);
-
-  // Convert inputs to Date objects (works for datetime-local string or Timestamp)
-  const sleptDate = toDateLocal(sleptAt);
-  const wakeDate  = toDateLocal(wakeUpAt);
-
-  // compute minutes total (duration) robustly
-  let mins = null;
-  if (sleptDate && wakeDate) {
-    mins = Math.round((wakeDate.getTime() - sleptDate.getTime()) / 60000);
-    // handle sleep across midnight
-    if (mins < 0) mins += 24 * 60;
-  }
-
-  // compute minutes since midnight for each (useful to chart patterns)
-  const sleptMin = minutesSinceMidnight(sleptDate);
-  const wakeMin  = minutesSinceMidnight(wakeDate);
-
-  const payload = {
-    sleep: {
-      sleptAt: sleptDate ? Timestamp.fromDate(sleptDate) : null,
-      wakeUpAt: wakeDate ? Timestamp.fromDate(wakeDate) : null,
-      minutes: mins,
-      sleptMin: sleptMin,
-      wakeMin: wakeMin,
-      savedAt: serverTimestamp()
-    }
-  };
-
-  await updateDoc(ref, payload);
-}
-
-/* ----- Check if morning routine already saved for a date ----- */
-export async function checkMorningRoutineSaved(dateKey = todayId()) {
-  const ref = await ensureDaily(dateKey);
-  const dailySnap = await getDoc(ref);
-  
-  if (!dailySnap.exists()) {
-    return false;
-  }
-  
-  const data = dailySnap.data();
-  return data.morningRoutineSaved === true;
-}
-
-/* ----- Mark morning routine as saved ----- */
-export async function markMorningRoutineSaved(dateKey = todayId()) {
-  const ref = await ensureDaily(dateKey);
-  await updateDoc(ref, {
-    morningRoutineSaved: true,
-    morningRoutineSavedAt: serverTimestamp()
-  });
-}
-
-/* ----- Remove existing duplicate activities ----- */
-export async function removeDuplicateActivities(dateKey = todayId()) {
-  const ref = await ensureDaily(dateKey);
-  const activitiesSnap = await getDocs(collection(ref, "activities"));
-  
-  if (activitiesSnap.empty) {
-    return { removed: 0, message: 'No activities found' };
-  }
-  
-  const activities = activitiesSnap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  
-  // Group activities by label, start time, and end time
-  const activityGroups = new Map();
-  
-  activities.forEach(activity => {
-    const label = activity.label?.trim().toLowerCase() || '';
-    const startTime = activity.startTime?.toMillis() || activity.start?.toMillis() || 0;
-    const endTime = activity.endTime?.toMillis() || activity.end?.toMillis() || 0;
-    
-    const key = `${label}-${startTime}-${endTime}`;
-    
-    if (!activityGroups.has(key)) {
-      activityGroups.set(key, []);
-    }
-    activityGroups.get(key).push(activity);
-  });
-  
-  let removedCount = 0;
-  
-  // For each group, keep the oldest (first created) and delete the rest
-  for (const [key, group] of activityGroups) {
-    if (group.length > 1) {
-      // Sort by creation time (oldest first)
-      group.sort((a, b) => {
-        const aTime = a.createdAt?.toMillis() || 0;
-        const bTime = b.createdAt?.toMillis() || 0;
-        return aTime - bTime;
-      });
-      
-      // Keep the first (oldest), delete the rest
-      const toDelete = group.slice(1);
-      
-      for (const duplicate of toDelete) {
-        try {
-          await deleteDoc(doc(db, "daily", dateKey, "activities", duplicate.id));
-          removedCount++;
-          console.log(`Removed duplicate: ${duplicate.label} at ${new Date(duplicate.startTime?.toMillis() || 0).toLocaleTimeString()}`);
-        } catch (error) {
-          console.error('Error deleting duplicate:', error);
-        }
-      }
-    }
-  }
-  
-  return { removed: removedCount, message: `Removed ${removedCount} duplicate activities` };
-}
-
-/* ----- Check for duplicate activities ----- */
-export async function checkDuplicateActivity({ start, end, label, dateKey = todayId() }) {
-  const ref = await ensureDaily(dateKey);
-  const startTS = asTimestamp(start);
-  const endTS = asTimestamp(end);
-  
-  // Get all activities for this date
-  const activitiesSnap = await getDocs(collection(ref, "activities"));
-  
-  // Check if any existing activity matches exactly
-  for (const doc of activitiesSnap.docs) {
-    const activity = doc.data();
-    
-    // Compare label, start time, and end time
-    const sameLabel = activity.label?.trim().toLowerCase() === label?.trim().toLowerCase();
-    const sameStartTime = activity.startTime?.toMillis() === startTS?.toMillis() || activity.start?.toMillis() === startTS?.toMillis();
-    const sameEndTime = activity.endTime?.toMillis() === endTS?.toMillis() || activity.end?.toMillis() === endTS?.toMillis();
-    
-    if (sameLabel && sameStartTime && sameEndTime) {
-      return true; // Duplicate found
-    }
-  }
-  
-  return false; // No duplicate found
-}
-
-/* ----- Morning routine activities (time blocks) ----- */
-// Stored under: /daily/{dateKey}/activities/{autoId}
-export async function addRoutineActivity({ start, end, label, category = null, dateKey = todayId(), isBatch = false }) {
-  // Check for duplicates first
-  const isDuplicate = await checkDuplicateActivity({ start, end, label, dateKey });
-  if (isDuplicate) {
-    console.log('Duplicate activity detected, skipping save:', label);
-    return { success: false, message: 'Duplicate activity - not saved' };
-  }
-  
-  const ref = await ensureDaily(dateKey);
-  const startTS = asTimestamp(start);
-  const endTS   = asTimestamp(end);
-  const mins = minutesBetween(startTS, endTS);
-  
-  // Auto-classify if no category provided
-  const finalCategory = category;
-
-  await addDoc(collection(ref, "activities"), {
-    label: (label || "").trim() || "Activity",
-    startTime: startTS,  // Changed from 'start' to 'startTime'
-    endTime: endTS,      // Changed from 'end' to 'endTime'
-    minutes: mins,       // Keep minutes for compatibility
-    category: finalCategory,
-    createdAt: serverTimestamp()
-  });
-
-  // bump daily total minutes (simple re-save; you can compute server-side later)
-  const snap = await getDoc(ref);
-  const prev = snap.exists() && snap.data().totals?.routineMinutes || 0;
-  await updateDoc(ref, { "totals.routineMinutes": prev + mins });
-  
-  // If this is part of a batch save (morning routine), mark it as saved
-  if (isBatch) {
-    await markMorningRoutineSaved(dateKey);
-  }
-  
-  return { success: true, message: 'Activity saved successfully' };
-}
-
-/* ----- Save Top-3 + avoidance ----- */
-export async function saveMorningPlan({ task1, task2, task3, avoidance, dateKey = todayId() }) {
-  const ref = await ensureDaily(dateKey);
-  await updateDoc(ref, {
-    tasks: [
-      { text: task1 || "", done: false },
-      { text: task2 || "", done: false },
-      { text: task3 || "", done: false },
-    ],
-    avoidance: avoidance || "",
-    morningSavedAt: serverTimestamp()
-  });
-}
-
-/* ----- Update task completion (evening checkboxes) ----- */
-export async function updateTaskCompletion({ index, done, dateKey = todayId() }) {
-  const ref = await ensureDaily(dateKey);
-  const snap = await getDoc(ref);
-  const data = snap.data() || {};
-  const tasks = Array.isArray(data.tasks) ? data.tasks : [];
-
-  if (!(index in tasks)) return;
-
-  tasks[index].done = !!done;
-  const doneCount = tasks.filter(t => t.done).length;
-  const pct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
-
-  await updateDoc(ref, {
-    tasks,
-    completion: pct,
-    lastUpdated: serverTimestamp()
-  });
-}
-
-/* ----- Save evening reflection ----- */
-export async function saveEveningReflection({ focused, improvement, dateKey = todayId() }) {
-  const ref = await ensureDaily(dateKey);
-  await updateDoc(ref, {
-    reflection: {
-      focused: focused ?? null, // "yes" | "no"
-      improvement: improvement || "",
-      savedAt: serverTimestamp()
-    }
-  });
-}
-
-/* ----- Fetch activities for a given day (to render charts) ----- */
-export async function getDay(dateKey = todayId()) {
-  const ref = doc(db, "daily", dateKey);
-  const snap = await getDoc(ref);
-  
-  if (!snap.exists()) return null;
-  
-  const data = { id: dateKey, ...snap.data() };
-  
-  // Also fetch activities subcollection
-  const activitiesSnap = await getDocs(collection(ref, "activities"));
-  data.activities = activitiesSnap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  
-  return data;
-}
-
-/* ----- Get all activities for a specific date ----- */
-export async function getActivities(dateKey = todayId()) {
-  const ref = doc(db, "daily", dateKey);
-  const activitiesSnap = await getDocs(collection(ref, "activities"));
-  return activitiesSnap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-}
-
-/* ----- Update activity category ----- */
-export async function updateActivityCategory(activityId, newCategory, dateKey = todayId()) {
-  const activityRef = doc(db, "daily", dateKey, "activities", activityId);
-  await updateDoc(activityRef, {
-    category: newCategory,
-    lastUpdated: serverTimestamp()
-  });
-}
-
-
-
-/* ----- Get current user ----- */
+/* Get current user */
 export function getCurrentUser() {
   return auth.currentUser;
 }
 
-/* ----- Get all daily documents for a date range (for analytics) ----- */
-export async function getDateRange(startDate, endDate) {
-  const dailyRef = collection(db, "daily");
-  const q = query(
-    dailyRef, 
-    where("date", ">=", startDate),
-    where("date", "<=", endDate)
-  );
-  const snapshot = await getDocs(q);
-  
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-}
-
-/* ----- Task Bank System ----- */
+/* Task Bank System */
 const TASK_BANK = {
   "LEARN": [
     "Revise one Statistics concept",
@@ -664,7 +321,7 @@ const TASK_BANK = {
   ]
 };
 
-/* ----- Generate 3 random tasks from each category ----- */
+/* Task generation functions */
 export function generateDailyTasks() {
   const result = {};
   
@@ -677,7 +334,6 @@ export function generateDailyTasks() {
   return result;
 }
 
-/* ----- Get a specific number of tasks from a category ----- */
 export function getTasksFromCategory(category, count = 3) {
   const tasks = TASK_BANK[category.toUpperCase()];
   if (!tasks) return [];
@@ -686,38 +342,161 @@ export function getTasksFromCategory(category, count = 3) {
   return shuffled.slice(0, count);
 }
 
-/* ----- Get all available categories ----- */
 export function getTaskCategories() {
   return Object.keys(TASK_BANK);
 }
 
-/* ----- Save generated tasks for a specific date ----- */
-export async function saveGeneratedTasks(generatedTasks, dateKey = todayId()) {
-  const ref = await ensureDaily(dateKey);
-  await updateDoc(ref, {
-    generatedTasks: generatedTasks,
-    tasksGeneratedAt: serverTimestamp()
+/* To-Do List Firebase Functions */
+export async function saveTodoList(userId, dateKey, todos) {
+  const ref = doc(db, `users/${userId}/todos`, dateKey);
+  await setDoc(ref, {
+    todos: Array.isArray(todos) ? todos : [],
+    updatedAt: serverTimestamp()
   });
 }
 
-/* ----- Get generated tasks for a specific date ----- */
-export async function getGeneratedTasks(dateKey = todayId()) {
-  const ref = doc(db, "daily", dateKey);
+export async function getTodoList(userId, dateKey) {
+  const ref = doc(db, `users/${userId}/todos`, dateKey);
   const snap = await getDoc(ref);
-  
-  if (!snap.exists()) return null;
-  
+  if (!snap.exists()) return [];
   const data = snap.data();
-  return data.generatedTasks || null;
+  return Array.isArray(data.todos) ? data.todos : [];
 }
 
-/* ----- Helper to format date for display ----- */
-export function formatDateForDisplay(dateKey) {
-  const date = new Date(dateKey + 'T12:00:00');
-  return date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
+export async function getHistoryData(userId, days = 5) {
+  const history = [];
+  const today = new Date();
+  
+  // First try to get data from date-wise storage
+  for (let i = 0; i < days; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateKey = todayId(date);
+    
+    let todos = await getTodoList(userId, dateKey);
+    
+    // If no date-wise data found, try to get from the old collection and migrate
+    if (todos.length === 0 && i > 0) {
+      todos = await migrateTodosForDate(userId, date);
+    }
+    
+    const completedTodos = todos.filter(todo => todo.completed);
+    const incompleteTodos = todos.filter(todo => !todo.completed);
+    
+    history.push({
+      date,
+      dateKey,
+      displayName: i === 0 ? 'TODAY' : i === 1 ? 'YESTERDAY' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase(),
+      todos: todos, // All todos
+      completedTodos,
+      incompleteTodos,
+      totalCount: todos.length,
+      completedCount: completedTodos.length
+    });
+  }
+  
+  return history;
+}
+
+async function migrateTodosForDate(userId, targetDate) {
+  try {
+    // Get all todos from the old collection
+    const todosRef = collection(db, `users/${userId}/todos`);
+    const snapshot = await getDocs(todosRef);
+    
+    const targetDateStr = targetDate.toDateString();
+    const todosForDate = [];
+    
+    snapshot.forEach((doc) => {
+      const todo = doc.data();
+      if (todo.createdAt) {
+        let todoDate;
+        
+        // Handle both Firestore Timestamp and regular Date
+        if (todo.createdAt.toDate) {
+          todoDate = todo.createdAt.toDate();
+        } else if (todo.createdAt instanceof Date) {
+          todoDate = todo.createdAt;
+        } else {
+          todoDate = new Date(todo.createdAt);
+        }
+        
+        // Check if this todo was created on the target date
+        if (todoDate.toDateString() === targetDateStr) {
+          todosForDate.push({
+            text: todo.text || '',
+            completed: todo.completed || false,
+            createdAt: todoDate.toISOString()
+          });
+        }
+      }
+    });
+    
+    // If we found todos for this date, save them to the date-wise collection
+    if (todosForDate.length > 0) {
+      const dateKey = todayId(targetDate);
+      await saveTodoList(userId, dateKey, todosForDate);
+    }
+    
+    return todosForDate;
+  } catch (error) {
+    console.error("Error migrating todos for date: ", error);
+    return [];
+  }
+}
+
+// One-time migration function to organize all existing todos by date
+export async function migrateAllTodos(userId) {
+  try {
+    console.log("Starting todo migration...");
+    
+    const todosRef = collection(db, `users/${userId}/todos`);
+    const snapshot = await getDocs(todosRef);
+    
+    // Group todos by date
+    const todosByDate = new Map();
+    
+    snapshot.forEach((doc) => {
+      const todo = doc.data();
+      if (todo.createdAt) {
+        let todoDate;
+        
+        // Handle both Firestore Timestamp and regular Date
+        if (todo.createdAt.toDate) {
+          todoDate = todo.createdAt.toDate();
+        } else if (todo.createdAt instanceof Date) {
+          todoDate = todo.createdAt;
+        } else {
+          todoDate = new Date(todo.createdAt);
+        }
+        
+        const dateKey = todayId(todoDate);
+        
+        if (!todosByDate.has(dateKey)) {
+          todosByDate.set(dateKey, []);
+        }
+        
+        todosByDate.get(dateKey).push({
+          text: todo.text || '',
+          completed: todo.completed || false,
+          createdAt: todoDate.toISOString()
+        });
+      }
+    });
+    
+    // Save each date's todos to the date-wise collection
+    const promises = [];
+    for (const [dateKey, todos] of todosByDate) {
+      promises.push(saveTodoList(userId, dateKey, todos));
+    }
+    
+    await Promise.all(promises);
+    
+    console.log(`Migration completed! Organized ${todosByDate.size} days of todos.`);
+    return { success: true, daysProcessed: todosByDate.size };
+    
+  } catch (error) {
+    console.error("Error migrating all todos: ", error);
+    return { success: false, error: error.message };
+  }
 }

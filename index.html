@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Track It - Productivity & Goal Management</title>
-    <meta name="description" content="Professional productivity tracking and goal management platform">
+    <title>Sign In - Track It</title>
     <link rel="stylesheet" href="src/components/auth/auth.component.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="src/components/shared/text-effect.component.js" defer></script>
     <script src="src/components/shared/click-spark.component.js" defer></script>
-    <script type="module" src="src/components/auth/register.component.js" defer></script>
+    <script type="module" src="src/components/auth/signin.component.js" defer></script>
 </head>
 <body>
     <div class="split-screen">
@@ -28,60 +28,71 @@
                 </div>
                 
                 <div class="panel-footer">
-                    <div class="trust-indicators">
-                        <div class="trust-item">
-                            <i class="fa-solid fa-shield-check"></i>
-                            <span>Secure & Private</span>
-                        </div>
-                        <div class="trust-item">
-                            <i class="fa-solid fa-users"></i>
-                            <span>10K+ Active Users</span>
-                        </div>
-                        <div class="trust-item">
-                            <i class="fa-solid fa-clock"></i>
-                            <span>2 min setup</span>
-                        </div>
-                    </div>
+                    <span>&copy; 2025 Track It Inc.</span>
+                    
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Panel -->
         <div class="right-panel">
-            <div class="auth-container">
-                <div class="auth-card">
-                    <h2>Start Your Journey</h2>
-                    <p class="auth-subtitle">Create your account and begin building lasting habits.</p>
-                    
-                    <form id="signupForm" class="auth-form">
-                        <div class="form-group">
-                            <label for="email">
-                                <i class="fas fa-envelope"></i>
-                                Email Address
-                            </label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">
-                                <i class="fas fa-lock"></i>
-                                Create Password
-                            </label>
-                            <input type="password" id="password" name="password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">
-                                <i class="fas fa-lock-open"></i>
-                                Confirm Password
-                            </label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" required>
-                        </div>
-                        <button type="submit" class="auth-btn">
-                            <i class="fas fa-user-plus"></i>
-                            Create Account
-                        </button>
-                    </form>
-                    <p class="auth-link">Already have an account? <a href="src/components/auth/signin.component.html">Sign In</a></p>
+            <div class="auth-wrapper">
+                <div class="auth-header">
+                    <h2>Welcome back</h2>
+                    <p>Please enter your details to sign in.</p>
                 </div>
+
+                <form id="signInForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="signInEmail">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope input-icon"></i>
+                            <input type="email" id="signInEmail" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signInPassword">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock input-icon"></i>
+                            <input type="password" id="signInPassword" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="rememberMe">
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Sign in <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+
+                <div class="social-buttons">
+                    <button class="btn-social">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+                        Google
+                    </button>
+                    <button class="btn-social">
+                        <img src="https://www.svgrepo.com/show/448224/github.svg" alt="GitHub">
+                        GitHub
+                    </button>
+                </div>
+
+                <p class="auth-footer">
+                    Don't have an account? <a href="src/components/auth/register.component.html">Sign up for free</a>
+                </p>
+                
+                <div id="signInMessage"></div>
             </div>
         </div>
     </div>

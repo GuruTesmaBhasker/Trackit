@@ -1,4 +1,4 @@
-import { db, auth, getTaskCategories, getTasksFromCategory } from "../../services/firebase.service.js";
+import { db, auth, getTaskCategories, getTasksFromCategory, todayId, saveTodoList, getTodoList, getHistoryData, migrateAllTodos } from "../../services/firebase.service.js";
 import { 
     collection, 
     addDoc, 
@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser = user;
             console.log("User logged in:", user.uid);
             loadData(); // Load from Firestore
+            loadHistory(); // Load history data
         } else {
             console.log("No user logged in, redirecting...");
             window.location.href = "../auth/signin.component.html";
@@ -83,6 +84,35 @@ function setupEventListeners() {
 
     // Journal Listener
     document.getElementById('saveJournalBtn').addEventListener('click', saveJournal);
+
+    // Migration button listener
+    document.getElementById('migrateTodosBtn').addEventListener('click', async () => {
+        if (!currentUser) return;
+        
+        const btn = document.getElementById('migrateTodosBtn');
+        btn.textContent = '🔄 Migrating...';
+        btn.disabled = true;
+        
+        try {
+            const result = await migrateAllTodos(currentUser.uid);
+            if (result.success) {
+                btn.textContent = '✅ Migration Complete';
+                alert(`Migration successful! Processed ${result.daysProcessed} days of data.`);
+                await loadHistory(); // Reload history
+            } else {
+                btn.textContent = '❌ Migration Failed';
+                alert('Migration failed: ' + result.error);
+            }
+        } catch (error) {
+            btn.textContent = '❌ Migration Failed';
+            alert('Migration error: ' + error.message);
+        }
+        
+        setTimeout(() => {
+            btn.textContent = '🔄 Migrate Old Data';
+            btn.disabled = false;
+        }, 3000);
+    });
 
     window.addEventListener('click', (e) => {
         if (e.target.id === 'addHabitModal') closeModal();
@@ -164,6 +194,13 @@ async function generateAndAddTodo() {
         
         todos.push({ id: docRef.id, ...newTodo });
         renderTodos();
+        
+        // Sync with date-wise storage
+        await syncTodaysTodos();
+        
+        // Refresh history
+        await loadHistory();
+        
         playCheckSound();
     } catch (error) {
         console.error("Error adding generated todo: ", error);
@@ -190,6 +227,12 @@ async function addTodoManual() {
         todos.push({ id: docRef.id, ...newTodo });
         renderTodos();
         input.value = '';
+        
+        // Sync with date-wise storage
+        await syncTodaysTodos();
+        
+        // Refresh history
+        await loadHistory();
     } catch (error) {
         console.error("Error adding todo: ", error);
     }
@@ -211,6 +254,13 @@ async function toggleTodo(id) {
         
         todos[todoIndex].completed = newStatus;
         renderTodos();
+        
+        // Sync with date-wise storage
+        await syncTodaysTodos();
+        
+        // Refresh history to show the update
+        await loadHistory();
+        
         if (newStatus) playCheckSound();
     } catch (error) {
         console.error("Error updating todo: ", error);
@@ -226,6 +276,12 @@ async function deleteTodo(id) {
         await deleteDoc(doc(db, `users/${currentUser.uid}/todos`, id));
         todos = todos.filter(t => t.id !== id);
         renderTodos();
+        
+        // Sync with date-wise storage
+        await syncTodaysTodos();
+        
+        // Refresh history
+        await loadHistory();
     } catch (error) {
         console.error("Error deleting todo: ", error);
     }
@@ -655,6 +711,154 @@ function updateChart() {
 // Utility Functions
 function getDaysInMonth(month, year) {
     return new Date(year, month, 0).getDate();
+}
+
+// --- History Functions ---
+async function loadHistory() {
+    if (!currentUser) return;
+    
+    try {
+        // First, sync today's todos to the date-wise system
+        await syncTodaysTodos();
+        
+        // Check if we need to migrate existing todos (one-time operation)
+        const hasDateWiseData = await checkForExistingDateWiseData();
+        if (!hasDateWiseData) {
+            console.log("No date-wise data found. Running migration...");
+            const migrationResult = await migrateAllTodos(currentUser.uid);
+            if (migrationResult.success) {
+                console.log("Migration completed successfully!");
+            }
+        }
+        
+        // Then load the history
+        const historyData = await getHistoryData(currentUser.uid, 5);
+        renderHistory(historyData);
+    } catch (error) {
+        console.error("Error loading history: ", error);
+        renderHistory([]);
+    }
+}
+
+async function checkForExistingDateWiseData() {
+    try {
+        // Check if today's date-wise data exists
+        const todayKey = todayId();
+        const todayTodos = await getTodoList(currentUser.uid, todayKey);
+        
+        // Also check yesterday
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayKey = todayId(yesterday);
+        const yesterdayTodos = await getTodoList(currentUser.uid, yesterdayKey);
+        
+        // If we have data for either today or yesterday, assume migration is done
+        return todayTodos.length > 0 || yesterdayTodos.length > 0;
+    } catch (error) {
+        console.error("Error checking for existing date-wise data: ", error);
+        return false;
+    }
+}
+
+async function syncTodaysTodos() {
+    if (!currentUser || todos.length === 0) return;
+    
+    try {
+        const todayKey = todayId();
+        // Convert current todos to the format expected by the date-wise system
+        const todosForStorage = todos.map(todo => ({
+            text: todo.text || '',
+            completed: todo.completed || false,
+            createdAt: todo.createdAt ? todo.createdAt.toISOString() : new Date().toISOString()
+        }));
+        
+        await saveTodoList(currentUser.uid, todayKey, todosForStorage);
+    } catch (error) {
+        console.error("Error syncing today's todos: ", error);
+    }
+}
+
+function renderHistory(historyData) {
+    const container = document.getElementById('historyContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    historyData.forEach(dayData => {
+        const dayElement = document.createElement('div');
+        dayElement.className = `history-day ${dayData.totalCount > 0 ? 'has-tasks' : 'empty'}`;
+        
+        const headerElement = document.createElement('div');
+        headerElement.className = 'history-day-header';
+        
+        const titleElement = document.createElement('div');
+        titleElement.className = 'history-day-title';
+        titleElement.textContent = dayData.displayName;
+        
+        const countElement = document.createElement('div');
+        countElement.className = 'history-day-counts';
+        
+        if (dayData.totalCount > 0) {
+            countElement.innerHTML = `
+                <span class="count completed">${dayData.completedCount} done</span>
+                <span class="count pending">${dayData.incompleteTodos.length} pending</span>
+            `;
+        } else {
+            countElement.innerHTML = '<span class="count empty">No tasks</span>';
+        }
+        
+        headerElement.appendChild(titleElement);
+        headerElement.appendChild(countElement);
+        dayElement.appendChild(headerElement);
+        
+        if (dayData.totalCount > 0) {
+            const tasksElement = document.createElement('div');
+            tasksElement.className = 'history-tasks';
+            
+            // Show completed todos first
+            dayData.completedTodos.forEach(todo => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'history-task completed';
+                
+                const checkElement = document.createElement('div');
+                checkElement.className = 'history-task-check completed';
+                
+                const textElement = document.createElement('div');
+                textElement.className = 'history-task-text completed';
+                textElement.textContent = todo.text;
+                
+                taskElement.appendChild(checkElement);
+                taskElement.appendChild(textElement);
+                tasksElement.appendChild(taskElement);
+            });
+            
+            // Show incomplete todos
+            dayData.incompleteTodos.forEach(todo => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'history-task pending';
+                
+                const checkElement = document.createElement('div');
+                checkElement.className = 'history-task-check pending';
+                
+                const textElement = document.createElement('div');
+                textElement.className = 'history-task-text pending';
+                textElement.textContent = todo.text;
+                
+                taskElement.appendChild(checkElement);
+                taskElement.appendChild(textElement);
+                tasksElement.appendChild(taskElement);
+            });
+            
+            dayElement.appendChild(tasksElement);
+        } else {
+            const emptyElement = document.createElement('div');
+            emptyElement.className = 'history-empty';
+            emptyElement.textContent = 'No tasks for this day';
+            dayElement.appendChild(emptyElement);
+        }
+        
+        container.appendChild(dayElement);
+    });
 }
 
 function getDateKey(day) {

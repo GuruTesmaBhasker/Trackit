@@ -78,8 +78,8 @@ body {
 
 .logo {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: CENTER;
+    gap: 15px;
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -421,7 +421,7 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .left-panel {
         display: none;
     }

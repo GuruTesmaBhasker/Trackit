@@ -796,3 +796,156 @@ body {
     opacity: 1;
 }
 
+/* History Section Styles */
+.history-section {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 40px;
+}
+
+.history-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.history-day {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.history-day.has-tasks {
+    border-left-color: #48bb78;
+}
+
+.history-day.empty {
+    opacity: 0.6;
+}
+
+.history-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.history-day-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a5568;
+    letter-spacing: 0.5px;
+}
+
+.history-day-counts {
+    display: flex;
+    gap: 8px;
+}
+
+.history-day-counts .count {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.history-day-counts .count.completed {
+    background: #48bb78;
+    color: white;
+}
+
+.history-day-counts .count.pending {
+    background: #ed8936;
+    color: white;
+}
+
+.history-day-counts .count.empty {
+    background: #cbd5e0;
+    color: #718096;
+}
+
+.history-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.history-task {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.history-task-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.history-task-check.completed {
+    background: #48bb78;
+    color: white;
+}
+
+.history-task-check.completed::after {
+    content: "✓";
+}
+
+.history-task-check.pending {
+    background: #ed8936;
+    color: white;
+}
+
+.history-task-check.pending::after {
+    content: "⏳";
+}
+
+.history-task-text {
+    color: #2d3748;
+    font-size: 14px;
+}
+
+.history-task-text.completed {
+    text-decoration: line-through;
+    text-decoration-color: #48bb78;
+    text-decoration-thickness: 1px;
+    color: #718096;
+}
+
+.history-task-text.pending {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.history-empty {
+    text-align: center;
+    color: #718096;
+    font-style: italic;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .history-container {
+        max-width: 100%;
+    }
+    
+    .history-day {
+        padding: 15px;
+    }
+}
+
