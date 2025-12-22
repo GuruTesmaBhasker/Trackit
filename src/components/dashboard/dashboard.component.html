@@ -6,6 +6,7 @@
     <title>Productivity Dashboard - Track It</title>
     <link rel="stylesheet" href="dashboard.component.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="../shared/click-spark.component.js" defer></script>
@@ -91,6 +92,24 @@
             </div>
         </section>
 
+        <!-- Weekly Schedule Section -->
+        <section class="weekly-section">
+            <div class="section-header">
+                <h2>📅 Weekly Schedule</h2>
+                <div class="action-buttons">
+                    <button class="btn-secondary" id="clearWeeklyBtn">🔄 All Clear</button>
+                </div>
+            </div>
+            <div class="weekly-container">
+                <div class="weekly-grid" id="weeklyGrid">
+                    <!-- Cards will be injected here -->
+                </div>
+                <div class="weekly-chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+        </section>
+
         <!-- Daily Habit Grid -->
         <section class="grid-section">
             <div class="section-header">
@@ -168,17 +187,54 @@
             </div>
         </section>
 
+        <!-- Permanent To-Do List Section -->
+        <section class="permanent-todo-section">
+            <div class="section-header">
+                <h2>📌 Master To-Do List</h2>
+                <p>Long-term tasks that stay until you delete them</p>
+            </div>
+            <div class="todo-container">
+                <div class="todo-content">
+                    <div class="todo-main">
+                        <div class="todo-input-wrapper">
+                            <input type="text" id="permTodoInput" placeholder="Add a long-term goal or task...">
+                            <button id="addPermTodoBtn" class="btn-primary">Add</button>
+                        </div>
+                        <div class="todo-list-wrapper">
+                            <table class="todo-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">Done</th>
+                                        <th>Task</th>
+                                        <th style="width: 100px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="permTodoListBody">
+                                    <!-- Permanent Todo items will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Task History Section -->
         <section class="history-section">
-            <div class="section-header">
-                <h2>📋 History</h2>
+            <div class="section-header" id="historyHeader" style="cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2>📋 History</h2>
+                    <i class="fa-solid fa-chevron-down" id="historyToggleIcon"></i>
+                </div>
                 <p>Your completed tasks from the past 5 days</p>
                 <button id="migrateTodosBtn" class="btn-secondary" style="margin-left: auto; font-size: 0.8rem;">
                     🔄 Migrate Old Data
                 </button>
             </div>
-            <div class="history-container" id="historyContainer">
-                <!-- History items will be loaded here -->
+            <div class="history-content collapsed" id="historyContent">
+                <div class="history-container" id="historyContainer">
+                    <!-- History items will be loaded here -->
+                </div>
             </div>
         </section>
 

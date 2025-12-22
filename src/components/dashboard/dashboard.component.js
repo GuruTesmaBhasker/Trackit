@@ -1,4 +1,4 @@
-import { db, auth, getTaskCategories, getTasksFromCategory, todayId, saveTodoList, getTodoList, getHistoryData, migrateAllTodos } from "../../services/firebase.service.js";
+import { db, auth, getTaskCategories, getTasksFromCategory, todayId, saveTodoList, getTodoList, getHistoryData, migrateAllTodos, saveWeeklyStatus, getWeeklyStatus, savePermanentTodos, getPermanentTodos } from "../../services/firebase.service.js";
 import { 
     collection, 
     addDoc, 
@@ -22,7 +22,20 @@ let todos = []; // New state for todos
 let completions = {};
 let trendChart = null;
 let todoChart = null; // New chart instance
+let weeklyChart = null; // New chart instance
 let currentUser = null;
+let weeklyStatus = {}; // New state for weekly status
+let permanentTodos = []; // New state for permanent todos
+
+const WEEKLY_SCHEDULE = [
+    { day: 'Monday', task: 'Python' },
+    { day: 'Tuesday', task: 'Prep for exams' },
+    { day: 'Wednesday', task: 'Do some project' },
+    { day: 'Thursday', task: 'SQL' },
+    { day: 'Friday', task: 'Prep for exam' },
+    { day: 'Saturday', task: 'Learn something new' },
+    { day: 'Sunday', task: 'Project + Job prep' }
+];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -75,11 +88,34 @@ function setupEventListeners() {
     document.querySelector('.close').addEventListener('click', closeModal);
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
     document.getElementById('habitForm').addEventListener('submit', addHabit);
+    document.getElementById('clearWeeklyBtn').addEventListener('click', clearWeeklySchedule);
     
+    // History Toggle
+    const historyHeader = document.getElementById('historyHeader');
+    const historyContent = document.getElementById('historyContent');
+    const historySection = document.querySelector('.history-section');
+    
+    // Set initial state (collapsed)
+    historySection.classList.add('collapsed-state');
+    
+    historyHeader.addEventListener('click', (e) => {
+        // Prevent triggering when clicking the migrate button
+        if (e.target.id === 'migrateTodosBtn') return;
+        
+        historyContent.classList.toggle('collapsed');
+        historySection.classList.toggle('collapsed-state');
+    });
+
     // Todo Listeners
     document.getElementById('addTodoBtn').addEventListener('click', addTodoManual);
     document.getElementById('todoInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTodoManual();
+    });
+
+    // Permanent Todo Listeners
+    document.getElementById('addPermTodoBtn').addEventListener('click', addPermanentTodo);
+    document.getElementById('permTodoInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addPermanentTodo();
     });
 
     // Journal Listener
@@ -895,6 +931,12 @@ async function loadData() {
         // Load Journal
         await loadJournal();
 
+        // Load Weekly Status
+        await loadWeeklyStatus();
+
+        // Load Permanent Todos
+        await loadPermanentTodos();
+
         renderTable();
         updateStats();
         updateChart();
@@ -1057,3 +1099,199 @@ function updateTodoChart() {
         }
     });
 }
+
+// --- Weekly Schedule Functions ---
+
+async function loadWeeklyStatus() {
+    if (!currentUser) return;
+    weeklyStatus = await getWeeklyStatus(currentUser.uid);
+    renderWeeklySchedule();
+    updateWeeklyChart();
+}
+
+function renderWeeklySchedule() {
+    const grid = document.getElementById('weeklyGrid');
+    grid.innerHTML = '';
+
+    WEEKLY_SCHEDULE.forEach((item, index) => {
+        const isCompleted = weeklyStatus[index] === true;
+        const card = document.createElement('div');
+        card.className = `weekly-card ${isCompleted ? 'completed' : ''}`;
+        
+        card.innerHTML = `
+            <div class="day-label">${item.day}</div>
+            <div class="task-text">${item.task}</div>
+            <div class="check-icon">✓</div>
+        `;
+        
+        card.addEventListener('click', (e) => {
+             toggleWeeklyTask(index, e);
+        });
+
+        grid.appendChild(card);
+    });
+}
+
+async function toggleWeeklyTask(index, e) {
+    if (!currentUser) return;
+    
+    weeklyStatus[index] = !weeklyStatus[index];
+    renderWeeklySchedule();
+    updateWeeklyChart();
+    
+    if (weeklyStatus[index]) {
+         confetti({
+            particleCount: 30,
+            spread: 50,
+            origin: { y: 0.7, x: e ? e.clientX / window.innerWidth : 0.5 }
+        });
+    }
+    
+    await saveWeeklyStatus(currentUser.uid, weeklyStatus);
+}
+
+async function clearWeeklySchedule() {
+    if (!currentUser) return;
+    if (!confirm('Are you sure you want to clear all weekly progress?')) return;
+    
+    weeklyStatus = {};
+    renderWeeklySchedule();
+    updateWeeklyChart();
+    
+    await saveWeeklyStatus(currentUser.uid, weeklyStatus);
+}
+
+function updateWeeklyChart() {
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    const completedCount = Object.values(weeklyStatus).filter(v => v).length;
+    const totalCount = WEEKLY_SCHEDULE.length;
+    const percentage = Math.round((completedCount / totalCount) * 100);
+
+    if (weeklyChart) {
+        weeklyChart.destroy();
+    }
+
+    weeklyChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Remaining'],
+            datasets: [{
+                data: [completedCount, totalCount - completedCount],
+                backgroundColor: ['#48bb78', '#e2e8f0'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            }
+        },
+        plugins: [{
+            id: 'textCenter',
+            beforeDraw: function(chart) {
+                var width = chart.width,
+                    height = chart.height,
+                    ctx = chart.ctx;
+
+                ctx.restore();
+                var fontSize = (height / 114).toFixed(2);
+                ctx.font = "bold " + fontSize + "em sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#2d3748";
+
+                var text = percentage + "%",
+                    textX = Math.round((width - ctx.measureText(text).width) / 2),
+                    textY = height / 2;
+
+                ctx.fillText(text, textX, textY);
+                ctx.save();
+            }
+        }]
+    });
+}
+
+// --- Permanent Todo Functions ---
+
+async function loadPermanentTodos() {
+    if (!currentUser) return;
+    permanentTodos = await getPermanentTodos(currentUser.uid);
+    renderPermanentTodos();
+}
+
+function renderPermanentTodos() {
+    const listBody = document.getElementById('permTodoListBody');
+    listBody.innerHTML = '';
+
+    permanentTodos.forEach((todo, index) => {
+        const row = document.createElement('tr');
+        row.className = todo.completed ? 'completed' : '';
+        
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="todo-checkbox" 
+                    ${todo.completed ? 'checked' : ''} 
+                    onchange="window.togglePermanentTodo(${index})">
+            </td>
+            <td class="todo-text">${todo.text}</td>
+            <td>
+                <button class="btn-delete" onclick="window.deletePermanentTodo(${index})">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        `;
+        listBody.appendChild(row);
+    });
+}
+
+async function addPermanentTodo() {
+    if (!currentUser) return;
+    
+    const input = document.getElementById('permTodoInput');
+    const text = input.value.trim();
+    
+    if (text) {
+        permanentTodos.push({
+            text: text,
+            completed: false,
+            createdAt: new Date().toISOString()
+        });
+        
+        input.value = '';
+        renderPermanentTodos();
+        await savePermanentTodos(currentUser.uid, permanentTodos);
+    }
+}
+
+window.togglePermanentTodo = async function(index) {
+    if (!currentUser) return;
+    
+    permanentTodos[index].completed = !permanentTodos[index].completed;
+    renderPermanentTodos();
+    
+    if (permanentTodos[index].completed) {
+        confetti({
+            particleCount: 30,
+            spread: 50,
+            origin: { y: 0.7 }
+        });
+    }
+    
+    await savePermanentTodos(currentUser.uid, permanentTodos);
+};
+
+window.deletePermanentTodo = async function(index) {
+    if (!currentUser) return;
+    if (!confirm('Delete this permanent task?')) return;
+    
+    permanentTodos.splice(index, 1);
+    renderPermanentTodos();
+    await savePermanentTodos(currentUser.uid, permanentTodos);
+};

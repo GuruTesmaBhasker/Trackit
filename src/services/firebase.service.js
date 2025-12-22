@@ -500,3 +500,61 @@ export async function migrateAllTodos(userId) {
     return { success: false, error: error.message };
   }
 }
+
+/* Weekly Schedule System */
+export async function saveWeeklyStatus(userId, status) {
+  try {
+    const docRef = doc(db, "users", userId, "weekly", "status");
+    await setDoc(docRef, { 
+      status,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving weekly status:", error);
+    return { success: false, error };
+  }
+}
+
+export async function getWeeklyStatus(userId) {
+  try {
+    const docRef = doc(db, "users", userId, "weekly", "status");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().status;
+    }
+    return {};
+  } catch (error) {
+    console.error("Error getting weekly status:", error);
+    return {};
+  }
+}
+
+/* Permanent Todo System */
+export async function savePermanentTodos(userId, todos) {
+  try {
+    const docRef = doc(db, "users", userId, "lists", "permanent");
+    await setDoc(docRef, { 
+      todos,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving permanent todos:", error);
+    return { success: false, error };
+  }
+}
+
+export async function getPermanentTodos(userId) {
+  try {
+    const docRef = doc(db, "users", userId, "lists", "permanent");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().todos || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error getting permanent todos:", error);
+    return [];
+  }
+}
