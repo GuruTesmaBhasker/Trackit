@@ -193,19 +193,20 @@ body {
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.75rem; /* Increased gap */
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem; /* Increased gap */
 }
 
 .form-group label {
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.9rem; /* Slightly larger */
+    font-weight: 600; /* Slightly bolder */
     color: var(--text-dark);
+    letter-spacing: 0.01em;
 }
 
 .input-wrapper {
@@ -214,30 +215,36 @@ body {
 
 .input-icon {
     position: absolute;
-    left: 1rem;
+    left: 1.25rem; /* Adjusted for larger padding */
     top: 50%;
     transform: translateY(-50%);
     color: #9ca3af;
-    font-size: 1rem;
+    font-size: 1.1rem;
     pointer-events: none;
+    transition: color 0.2s;
 }
 
 .auth-form input {
     width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    padding: 1rem 1.25rem 1rem 3rem; /* Increased padding */
     border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    font-size: 0.95rem;
+    border-radius: 0.75rem; /* More rounded */
+    font-size: 1rem;
     background-color: var(--input-bg);
     color: var(--text-dark);
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .auth-form input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
     background-color: white;
+}
+
+.auth-form input:focus + .input-icon {
+    color: var(--primary-color);
 }
 
 .auth-form input::placeholder {
@@ -308,31 +315,37 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
     border: none;
-    padding: 0.875rem;
-    border-radius: 0.5rem;
+    padding: 1rem; /* Larger padding */
+    border-radius: 0.75rem; /* More rounded */
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
+    margin-top: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.15);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 .divider {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 1.5rem 0;
+    margin: 2rem 0; /* Increased margin */
     color: #9ca3af;
     font-size: 0.875rem;
 }
@@ -346,33 +359,38 @@ body {
 
 .divider span {
     padding: 0 1rem;
+    font-weight: 500;
+    color: #6b7280;
 }
 
 .social-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 1.25rem; /* Increased gap */
 }
 
 .btn-social {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
+    gap: 0.75rem;
+    padding: 0.875rem;
     background-color: white;
     border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
+    border-radius: 0.75rem; /* More rounded */
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-dark);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-social:hover {
     background-color: #f9fafb;
     border-color: #d1d5db;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .btn-social img {

@@ -31,7 +31,19 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // Redirect to main app after successful sign in
           setTimeout(() => {
-            window.location.href = "../dashboard/dashboard.component.html";
+            const path = window.location.pathname;
+            if (path.endsWith('/') || path.endsWith('/index.html')) {
+                // Check if we are in a subfolder that is NOT auth
+                if (path.includes('/src/app/')) {
+                     window.location.href = "../components/dashboard/dashboard.component.html";
+                } else {
+                     // Root index.html
+                     window.location.href = "src/components/dashboard/dashboard.component.html";
+                }
+            } else {
+                // Likely in signin.component.html
+                window.location.href = "../dashboard/dashboard.component.html";
+            }
           }, 1000);
         })
         .catch((error) => {
