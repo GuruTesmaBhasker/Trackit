@@ -15,17 +15,18 @@ import {
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
 
 // State
-let currentMonth = 12;
-let currentYear = 2025;
+const now = new Date();
+let currentMonth = now.getMonth() + 1;
+let currentYear = now.getFullYear();
 let habits = [];
-let todos = []; // New state for todos
+let todos = [];
 let completions = {};
 let trendChart = null;
-let todoChart = null; // New chart instance
-let weeklyChart = null; // New chart instance
+let todoChart = null;
+let weeklyChart = null;
 let currentUser = null;
-let weeklyStatus = {}; // New state for weekly status
-let permanentTodos = []; // New state for permanent todos
+let weeklyStatus = {};
+let permanentTodos = [];
 
 const WEEKLY_SCHEDULE = [
     { day: 'Monday', task: 'Python' },
@@ -44,23 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('todoDateDisplay').textContent = today.toLocaleDateString('en-US', options);
 
+    // Set month and year inputs to current date
+    document.getElementById('monthSelect').value = currentMonth;
+    document.getElementById('yearInput').value = currentYear;
+
     // Wait for auth state
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            console.log("User logged in:", user.uid);
             loadData(); // Load from Firestore
             loadHistory(); // Load history data
         } else {
-            console.log("No user logged in, redirecting...");
             window.location.href = "../auth/signin.component.html";
         }
     });
 
     setupEventListeners();
-    // Initial render (empty) until data loads
+    
     renderTable();
-    renderTodos(); // Initial render for todos
+    renderTodos();
     updateStats();
     updateChart();
 });
@@ -84,7 +87,7 @@ function setupEventListeners() {
     });
     
     document.getElementById('addHabitBtn').addEventListener('click', openModal);
-    document.getElementById('generateTaskBtn').addEventListener('click', generateAndAddTodo); // Changed to generateAndAddTodo
+    document.getElementById('generateTaskBtn').addEventListener('click', generateAndAddTodo);
     document.querySelector('.close').addEventListener('click', closeModal);
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
     document.getElementById('habitForm').addEventListener('submit', addHabit);
@@ -197,7 +200,6 @@ async function addHabit(e) {
         renderTable();
         updateStats();
         updateChart();
-        console.log("Habit added with ID: ", docRef.id);
     } catch (error) {
         console.error("Error adding habit: ", error);
         alert("Failed to add habit. Please try again.");
@@ -601,7 +603,6 @@ async function deleteHabit(habitId) {
             renderTable();
             updateStats();
             updateChart();
-            console.log("Habit deleted:", habitId);
         } catch (error) {
             console.error("Error deleting habit: ", error);
             alert("Failed to delete habit.");
@@ -760,10 +761,8 @@ async function loadHistory() {
         // Check if we need to migrate existing todos (one-time operation)
         const hasDateWiseData = await checkForExistingDateWiseData();
         if (!hasDateWiseData) {
-            console.log("No date-wise data found. Running migration...");
             const migrationResult = await migrateAllTodos(currentUser.uid);
             if (migrationResult.success) {
-                console.log("Migration completed successfully!");
             }
         }
         
@@ -922,9 +921,6 @@ async function loadData() {
             completions[doc.id] = data.completions || {};
         });
 
-        // If no habits, maybe add defaults? Or just leave empty.
-        // For now, let's leave it empty so user starts fresh or sees their data.
-        
         // Load Todos
         await loadTodos();
         
@@ -940,7 +936,6 @@ async function loadData() {
         renderTable();
         updateStats();
         updateChart();
-        console.log("Data loaded from Firestore");
     } catch (error) {
         console.error("Error loading data: ", error);
     }

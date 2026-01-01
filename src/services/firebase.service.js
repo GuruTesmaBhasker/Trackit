@@ -448,7 +448,6 @@ async function migrateTodosForDate(userId, targetDate) {
 // One-time migration function to organize all existing todos by date
 export async function migrateAllTodos(userId) {
   try {
-    console.log("Starting todo migration...");
     
     const todosRef = collection(db, `users/${userId}/todos`);
     const snapshot = await getDocs(todosRef);
@@ -492,7 +491,6 @@ export async function migrateAllTodos(userId) {
     
     await Promise.all(promises);
     
-    console.log(`Migration completed! Organized ${todosByDate.size} days of todos.`);
     return { success: true, daysProcessed: todosByDate.size };
     
   } catch (error) {

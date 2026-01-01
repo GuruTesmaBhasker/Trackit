@@ -15,13 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const emailInput = document.getElementById("signUpEmail").value;
       const passwordInput = document.getElementById("signUpPassword").value;
 
-      console.log("Form submitted with:", emailInput); // Debug log
-
       createUserWithEmailAndPassword(auth, emailInput, passwordInput)
         .then((userCredential) => {
           // Signed in
           const user = userCredential.user;
-          console.log("User created:", user.uid);
           
           if (signUpMessage) {
             signUpMessage.textContent = "User registered successfully! Redirecting...";

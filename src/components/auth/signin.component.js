@@ -15,13 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const emailInput = document.getElementById("signInEmail").value;
       const passwordInput = document.getElementById("signInPassword").value;
 
-      console.log("Sign in attempt for:", emailInput);
-
       signInWithEmailAndPassword(auth, emailInput, passwordInput)
         .then((userCredential) => {
           // Signed in successfully
           const user = userCredential.user;
-          console.log("User signed in:", user.uid);
           
           if (signInMessage) {
             signInMessage.textContent = "Sign in successful! Redirecting...";
