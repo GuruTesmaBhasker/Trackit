@@ -1,187 +1,166 @@
-# Track It - Productivity & Goal Management Platform
+# 📘 SQL Learning & Practice – README
 
-A comprehensive web-based productivity platform designed to help professionals track their goals, manage daily tasks, and build consistent habits through data-driven insights.
+## 📌 Overview
 
-## 🚀 Features
+This repository/document contains my SQL learning journey, where I studied core to advanced SQL concepts and implemented them practically using code.
+The focus was on understanding how SQL works internally, not just writing queries.
 
-### 📊 Productivity Dashboard
-- **Monthly Overview**: Track total check-ins, longest streaks, and perfect days
-- **Visual Analytics**: Interactive charts showing daily completion trends
-- **Habit Grid**: Comprehensive monthly view of all tracked activities
-- **Real-time Statistics**: Live updates of your progress metrics
+## 🧠 Concepts Learned
 
-### ✅ Daily Task Management
-- **Smart Task Generator**: AI-powered task suggestions from curated categories
-- **Interactive To-Do Lists**: Daily task tracking with completion statistics
-- **Progress Visualization**: Doughnut charts showing daily completion rates
-- **Persistent Storage**: Cloud-based task synchronization
+### 1️⃣ SQL Basics & Table Handling
 
-### 📝 Daily Journal
-- **Reflection Tool**: Daily journaling for personal growth
-- **Auto-save**: Seamless saving of journal entries
-- **Date-based Organization**: Entries organized by date for easy retrieval
+- Creating databases and tables using `CREATE DATABASE` and `CREATE TABLE`
+- Understanding schema (columns, data types, structure)
+- Applying constraints:
+  - `PRIMARY KEY`
+  - `UNIQUE`
+  - `NOT NULL`
+  - `FOREIGN KEY`
+- Inserting data using `INSERT INTO`
+- Viewing data and structure using:
+  - `SELECT *`
+  - `DESC table_name`
+  - `SHOW TABLES`
 
-### 🔐 Secure Authentication
-- **Firebase Integration**: Secure user authentication and data storage
-- **Real-time Sync**: Cross-device synchronization
-- **User-specific Data**: Personalized experience with private data
+### 2️⃣ Filtering & Logical Operations
 
-## 🏗️ Architecture
+- Filtering rows using:
+  - `WHERE`
+  - `AND`, `OR`, `NOT`
+  - `LIKE`, `IN`, `BETWEEN`
+- Handling NULL values using:
+  - `IS NULL`
+  - `IS NOT NULL`
+  - `COALESCE()`
+  - `IFNULL()` (MySQL)
+- Sorting data using `ORDER BY ASC / DESC`
+- Understanding why `NOT NULL` cannot be used directly in `WHERE`
 
-### Professional Structure
-```
-src/
-├── components/
-│   ├── auth/                    # Authentication components
-│   │   ├── auth.component.css
-│   │   ├── signin.component.*
-│   │   └── register.component.*
-│   ├── dashboard/               # Main productivity dashboard
-│   │   ├── dashboard.component.css
-│   │   ├── dashboard.component.html
-│   │   └── dashboard.component.js
-│   └── shared/                  # Reusable UI components
-│       ├── click-spark.component.js
-│       └── text-effect.component.js
-├── services/                    # Business logic & API
-│   └── firebase.service.js
-└── assets/                      # Static resources
-```
+### 3️⃣ Aggregate Functions & Grouping
 
-### Technology Stack
-- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
-- **Backend**: Firebase Firestore (NoSQL Database)
-- **Authentication**: Firebase Auth
-- **Charts**: Chart.js
-- **Effects**: Canvas Confetti
-- **Icons**: Font Awesome
-- **Fonts**: Google Fonts (Inter)
+- Using aggregate functions:
+  - `SUM()`, `AVG()`, `COUNT()`, `MIN()`, `MAX()`
+- Understanding how aggregates treat `NULL` values
+- Grouping data using `GROUP BY`
+- Filtering grouped data using `HAVING`
+- **Rule learned:**
+  - Every non-aggregated column in `SELECT` must appear in `GROUP BY`
+- Using aliases and ordering by aliases
 
-## 🛠️ Installation & Setup
+### 4️⃣ Subqueries
 
-### Prerequisites
-- Modern web browser with ES6+ support
-- Internet connection for Firebase and CDN resources
+- Writing subqueries inside `WHERE`
+- Single-row and multi-row subqueries
+- Using:
+  - `IN`, `NOT IN`
+  - `EXISTS`, `NOT EXISTS`
+- Understanding correlated subqueries
+- Solving comparison-based subqueries using aggregates
 
-### Quick Start
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/GuruTesmaBhasker/Trackit.git
-   cd Trackit
-   ```
+### 5️⃣ Joins
 
-2. **Open the application**
-   - Open `index.html` in your web browser
-   - Or serve through a local web server for optimal performance
+- Understanding how SQL combines tables internally
+- Practicing:
+  - `INNER JOIN`
+  - `LEFT JOIN`
+  - `RIGHT JOIN`
+  - `FULL JOIN` (conceptual)
+- Writing multi-table joins
+- **Important execution insight:**
+  - `JOIN` happens before `WHERE` and `SELECT`
 
-3. **Create an account**
-   - Navigate to the sign-up page
-   - Register with email and password
-   - Start tracking your productivity!
+### 6️⃣ Views
 
-## 🎯 Usage Guide
+- Creating views using `CREATE VIEW`
+- Updating views using `CREATE OR REPLACE VIEW`
+- Removing views using `DROP VIEW`
+- Understanding why views are used:
+  - Security
+  - Simplification
+  - Reusability
 
-### Getting Started
-1. **Registration**: Create your account through the authentication system
-2. **Dashboard Access**: Sign in to access your personalized dashboard
-3. **Add Habits**: Use the "Add Habit" button to define your tracking goals
-4. **Daily Tracking**: Check off completed habits in the monthly grid
-5. **Task Management**: Add daily tasks and track completion
-6. **Journaling**: Reflect on your progress with daily journal entries
+### 7️⃣ Window Functions (Advanced SQL)
 
-### Key Features
-- **Habit Tracking**: Monthly grid with visual progress indicators
-- **Goal Setting**: Define monthly targets for each habit
-- **Streak Tracking**: Monitor consistency with streak calculations
-- **Data Persistence**: All data stored securely in the cloud
-- **Mobile Responsive**: Optimized for all device types
+- Learning analytic functions:
+  - `ROW_NUMBER()`
+  - `RANK()`
+  - `DENSE_RANK()`
+  - `NTILE()`
+  - `SUM() OVER()`
+  - `AVG() OVER()`
+- Understanding how window functions:
+  - Do **NOT** reduce rows
+  - Add calculated columns instead
 
-## 📊 Data & Analytics
+### 8️⃣ PARTITION BY
 
-### Progress Metrics
-- **Total Check-ins**: Cumulative habit completions
-- **Longest Streak**: Maximum consecutive days of any habit
-- **Perfect Days**: Days where all habits were completed
-- **Completion Trends**: Visual representation of daily progress
+- Using `PARTITION BY` inside window functions
+- Understanding the difference between:
+  - `GROUP BY` (collapses rows)
+  - `PARTITION BY` (keeps rows)
 
-### Chart Visualizations
-- **Line Charts**: Daily completion trends over time
-- **Doughnut Charts**: Task completion ratios
-- **Progress Cards**: Statistical overview with visual indicators
+### 9️⃣ UNION & UNION ALL
 
-## 🔧 Configuration
+- Combining result sets using:
+  - `UNION` (removes duplicates)
+  - `UNION ALL` (keeps duplicates)
+- Understanding column count and type compatibility rules
 
-### Firebase Setup
-The application uses Firebase for backend services. Configuration is handled in `src/services/firebase.service.js`:
+### 🔟 SQL Order of Execution
 
-```javascript
-const firebaseConfig = {
-  // Configuration details in firebase.service.js
-};
-```
+- Learned the actual execution order of SQL queries:
+  1. `FROM`
+  2. `JOIN`
+  3. `WHERE`
+  4. `GROUP BY`
+  5. `HAVING`
+  6. `SELECT`
+  7. `ORDER BY`
+  8. `LIMIT`
+- This helped in debugging complex queries correctly.
 
-### Customization
-- **Themes**: Modify CSS variables in component stylesheets
-- **Habit Categories**: Extend task categories in `firebase.service.js`
-- **UI Components**: Add new components in appropriate folders
+### 1️⃣1️⃣ Database Normalization
 
-## 🚀 Deployment
+- Learned normalization concepts:
+  - **1NF** – Atomic values, no repeating groups
+  - **2NF** – No partial dependency
+  - **3NF** – No transitive dependency
+- Practiced converting tables into normalized forms
 
-### Firebase Hosting
-1. Install Firebase CLI: `npm install -g firebase-tools`
-2. Login: `firebase login`
-3. Initialize: `firebase init hosting`
-4. Deploy: `firebase deploy`
+### 1️⃣2️⃣ ACID Properties
 
-### Alternative Hosting
-- **Netlify**: Drag and drop deployment
-- **Vercel**: Git-based deployments
-- **GitHub Pages**: Static hosting option
+- Understood transactional reliability using:
+  - **A**tomicity
+  - **C**onsistency
+  - **I**solation
+  - **D**urability
+- Practiced transactions using:
+  - `START TRANSACTION`
+  - `COMMIT`
+  - `ROLLBACK`
+- Learned why ACID is critical for real-world systems (banking, payments, etc.)
 
-## 🤝 Contributing
+## 🛠️ What I Implemented (Hands-on)
 
-### Development Guidelines
-1. Follow component-based architecture
-2. Use semantic naming conventions
-3. Maintain separation of concerns
-4. Update documentation for new features
+- Created multiple tables with constraints
+- Inserted sample datasets
+- Wrote queries for:
+  - Filtering
+  - Aggregation
+  - Subqueries
+  - Joins
+  - Window functions
+- Simulated transactions to understand ACID behavior
+- Debugged SQL errors related to:
+  - `GROUP BY` rules
+  - `NULL` handling
+  - `JOIN` logic
+  - Execution order
 
-### Code Style
-- **JavaScript**: ES6+ modules, async/await patterns
-- **CSS**: BEM methodology, CSS custom properties
-- **HTML**: Semantic markup, accessibility considerations
+## 🎯 Outcome
 
-## 📈 Roadmap
-
-### Upcoming Features
-- [ ] Goal templates and presets
-- [ ] Team collaboration features
-- [ ] Advanced analytics dashboard
-- [ ] Mobile application
-- [ ] Habit sharing and social features
-- [ ] Export functionality (PDF/CSV)
-- [ ] Notification system
-- [ ] Dark theme mode
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙋‍♂️ Support
-
-For questions, suggestions, or support:
-- **GitHub Issues**: Report bugs or request features
-- **Email**: Contact the development team
-- **Documentation**: Refer to inline code comments
-
-## ⭐ Acknowledgments
-
-- **Chart.js**: Powerful charting library
-- **Firebase**: Robust backend infrastructure
-- **Font Awesome**: Comprehensive icon library
-- **Inter Font**: Professional typography
-- **Canvas Confetti**: Celebration animations
-
----
-
-**Track It** - *Empowering productivity through consistent tracking and insightful analytics.*
+By completing this practice:
+- I can design relational tables correctly
+- I understand how SQL queries execute internally
+- I can debug SQL errors logically
+- I am comfortable writing intermediate to advanced SQL queries
